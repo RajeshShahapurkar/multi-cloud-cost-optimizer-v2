@@ -53,9 +53,16 @@ async def import_pricing(provider: str=Form(...), file: UploadFile=File(...),
     content=await read_csv(file)
     try: prices,errors=parse_pricing(content,provider)
     except Exception as exc: raise HTTPException(422,f"Could not parse pricing CSV: {exc}") from exc
-    result=await persist_pricing_import(db,user["id"],provider,file.filename or "pricing.csv",prices,errors)
-    return {"provider":provider,"total_rows":len(prices)+len(errors),"valid_rows":len(prices),
-            "invalid_rows":len(errors),**result,
+    seen=set(); unique=[]; duplicates=0
+    for row in prices:
+        fingerprint=row["source_row_hash"]
+        if fingerprint in seen:
+            duplicates+=1
+        else:
+            seen.add(fingerprint); unique.append(row)
+    result=await persist_pricing_import(db,user["id"],provider,file.filename or "pricing.csv",unique,errors,duplicates)
+    return {"provider":provider,"total_rows":len(prices)+len(errors),"valid_rows":len(unique),
+            "invalid_rows":len(errors),"duplicate_rows":duplicates,**result,
             "message":"Your pricing catalogue entries were imported. Estimates will use only these user-provided rates."}
 
 @router.get("/dashboard")
