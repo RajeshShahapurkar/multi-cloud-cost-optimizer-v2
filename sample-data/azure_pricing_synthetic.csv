@@ -1,0 +1,2 @@
+region,instance_type,vcpu,memory_gb,compute_hourly_cost,storage_gb_month_cost,currency,pricing_date
+eastus,synthetic-small,2,8,0.0780,0.1050,USD,2026-10-01
