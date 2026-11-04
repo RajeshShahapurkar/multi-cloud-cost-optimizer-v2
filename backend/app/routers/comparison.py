@@ -1,36 +1,51 @@
-from fastapi import APIRouter, Header
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Header, HTTPException
+from pydantic import BaseModel, Field, field_validator
 from app.services.supabase_rest import get_supabase_client_from_authorization
 
 router=APIRouter(tags=["cross-cloud cost comparison"])
 
 class ComparisonRequest(BaseModel):
-    region: str = Field(min_length=1, max_length=100)
+    regions: dict[str, str] = Field(min_length=1)
     vcpu: int = Field(gt=0, le=1024)
     memory_gb: float = Field(gt=0, le=65536)
     storage_gb: float = Field(ge=0, le=10000000)
     hours_per_month: float = Field(default=730, gt=0, le=744)
     currency: str = Field(min_length=3, max_length=3)
 
+    @field_validator("regions")
+    @classmethod
+    def validate_regions(cls, value):
+        allowed={"aws","azure","gcp"}
+        if not value or not set(value).issubset(allowed):
+            raise ValueError("regions must contain AWS, Azure and/or GCP region codes.")
+        if any(not region.strip() for region in value.values()):
+            raise ValueError("Region values cannot be empty.")
+        return value
+
 @router.post("/comparison/estimate")
 async def compare_cloud_costs(request:ComparisonRequest,authorization:str|None=Header(default=None)):
     db,user=await get_supabase_client_from_authorization(authorization)
     currency=request.currency.upper()
-    rows=await db.request("GET","/rest/v1/pricing_catalogue",params={
-        "select":"provider,region,instance_type,vcpu,memory_gb,compute_hourly_cost,storage_gb_month_cost,currency,pricing_date",
-        "region":"eq."+request.region,
-        "currency":"eq."+currency,
-        "vcpu":"gte."+str(request.vcpu),
-        "memory_gb":"gte."+str(request.memory_gb),
-        "order":"pricing_date.desc",
-        "limit":"1000",
-    })
+    all_rows=[]
+    for provider,region in request.regions.items():
+        rows=await db.request("GET","/rest/v1/pricing_catalogue",params={
+            "select":"provider,region,instance_type,vcpu,memory_gb,compute_hourly_cost,storage_gb_month_cost,currency,pricing_date",
+            "provider":"eq."+provider,
+            "region":"eq."+region,
+            "currency":"eq."+currency,
+            "vcpu":"gte."+str(request.vcpu),
+            "memory_gb":"gte."+str(request.memory_gb),
+            "order":"pricing_date.desc",
+            "limit":"1000",
+        })
+        all_rows.extend(rows or [])
+
     latest_by_configuration={}
-    for row in rows or []:
-        config_key=(row["provider"],row["instance_type"],row["vcpu"],str(row["memory_gb"]),row["region"],row["currency"])
-        previous=latest_by_configuration.get(config_key)
+    for row in all_rows:
+        key=(row["provider"],row["instance_type"],row["vcpu"],str(row["memory_gb"]),row["region"],row["currency"])
+        previous=latest_by_configuration.get(key)
         if previous is None or row["pricing_date"]>previous["pricing_date"]:
-            latest_by_configuration[config_key]=row
+            latest_by_configuration[key]=row
 
     best_by_provider={}
     for row in latest_by_configuration.values():
@@ -56,10 +71,10 @@ async def compare_cloud_costs(request:ComparisonRequest,authorization:str|None=H
     options=sorted(best_by_provider.values(),key=lambda x:x["estimated_monthly_cost"])
     return {
         "requested_configuration":{
-            "region":request.region,"vcpu":request.vcpu,"memory_gb":request.memory_gb,
+            "regions":request.regions,"vcpu":request.vcpu,"memory_gb":request.memory_gb,
             "storage_gb":request.storage_gb,"hours_per_month":request.hours_per_month,"currency":currency
         },
         "options":options,
         "lowest_cost_provider":options[0]["provider"] if options else None,
-        "note":"Estimates use only pricing rows uploaded by this user. They are not live provider quotations and exclude taxes, network transfer, discounts, support, licensing and other workload-specific charges."
+        "note":"Estimates use only pricing rows uploaded by this user. Supply the comparable provider-specific region codes. They are not live provider quotations and exclude taxes, network transfer, discounts, support, licensing and other workload-specific charges."
     }
