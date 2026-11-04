@@ -65,6 +65,10 @@ create table if not exists public.resource_metrics (
   memory_utilization_pct numeric(6,3) check (memory_utilization_pct between 0 and 100),
   active_hours numeric(12,4) check (active_hours >= 0),
   observed_hours numeric(12,4) check (observed_hours > 0),
+  region text,
+  provisioned_vcpu integer check (provisioned_vcpu is null or provisioned_vcpu > 0),
+  provisioned_memory_gb numeric(12,3) check (provisioned_memory_gb is null or provisioned_memory_gb > 0),
+  pricing_currency char(3),
   created_at timestamptz not null default now(),
   foreign key (import_batch_id, user_id)
     references public.import_batches(id, user_id) on delete cascade
