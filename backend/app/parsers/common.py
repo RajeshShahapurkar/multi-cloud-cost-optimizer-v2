@@ -58,12 +58,18 @@ def normalize_billing_frame(frame: pd.DataFrame, provider: str):
             errors.append({"row": int(index)+2, "error": "Invalid or missing cost"}); continue
         if start is None:
             errors.append({"row": int(index)+2, "error": "Invalid or missing usage_start"}); continue
-        currency = str(record["currency"]).strip().upper()
+        currency_value = clean(record["currency"])
+        service_name = clean(record["service_name"])
+        if not service_name:
+            errors.append({"row": int(index)+2, "error": "Missing service_name"}); continue
+        if not currency_value:
+            errors.append({"row": int(index)+2, "error": "Missing currency"}); continue
+        currency = currency_value.upper()
         if len(currency) != 3:
             errors.append({"row": int(index)+2, "error": "Currency must be a 3-character code"}); continue
         item = {
           "provider": provider, "resource_id": clean(record["resource_id"]),
-          "resource_name": clean(record["resource_name"]), "service_name": str(record["service_name"]).strip(),
+          "resource_name": clean(record["resource_name"]), "service_name": service_name,
           "resource_type": clean(record["resource_type"]), "region": clean(record["region"]),
           "usage_start": start.isoformat(),
           "usage_end": parse_datetime(record["usage_end"]).isoformat() if parse_datetime(record["usage_end"]) else None,
