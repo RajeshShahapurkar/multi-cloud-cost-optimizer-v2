@@ -56,7 +56,7 @@ create table if not exists public.billing_records (
 create table if not exists public.resource_metrics (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  import_batch_id uuid not null references public.import_batches(id) on delete cascade,
+  import_batch_id uuid not null,
   provider text not null check (provider in ('aws','azure','gcp')),
   resource_id text not null,
   observed_at timestamptz not null,
