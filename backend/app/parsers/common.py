@@ -16,7 +16,7 @@ ALIASES = {
  "usage_quantity": ["usage_quantity","usageamount","quantity"],
  "usage_unit": ["usage_unit","pricingunit","unit"],
  "cost": ["cost","unblendedcost","lineitem/unblendedcost","pretaxcost","costinbillingcurrency","costatlist"],
- "currency": ["currency","currencycode","billingcurrency"],
+ "currency": ["currency","currencycode","billingcurrency","lineitem/currencycode"],
  "charge_type": ["charge_type","chargetype","lineitem/lineitemtype","costtype"]
 }
 
