@@ -1,6 +1,6 @@
 import io
 import pandas as pd
-from app.parsers.common import find_column, parse_datetime, parse_decimal, clean
+from app.parsers.common import find_column, parse_datetime, parse_decimal, clean, row_hash
 
 ALIASES = {
  "resource_id":["resource_id","resourceid","resource id"],
@@ -47,5 +47,6 @@ def parse_metrics(content: bytes, provider: str):
         else:
             if item["provisioned_vcpu"] is not None:
                 item["provisioned_vcpu"] = int(item["provisioned_vcpu"])
+            item["source_row_hash"] = row_hash(item)
             rows.append(item)
     return rows, errors
