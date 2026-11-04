@@ -8,13 +8,14 @@ create table if not exists public.cloud_profiles (
   user_id uuid not null references auth.users(id) on delete cascade,
   provider text not null check (provider in ('aws','azure','gcp')),
   display_name text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  unique (id, user_id)
 );
 
 create table if not exists public.import_batches (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  cloud_profile_id uuid not null references public.cloud_profiles(id) on delete cascade,
+  cloud_profile_id uuid not null,
   data_type text not null check (data_type in ('billing','metrics')),
   original_filename text not null,
   status text not null default 'validated' check (status in ('validated','imported','failed')),
@@ -22,13 +23,16 @@ create table if not exists public.import_batches (
   valid_rows integer not null default 0,
   invalid_rows integer not null default 0,
   duplicate_rows integer not null default 0,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  unique (id, user_id),
+  foreign key (cloud_profile_id, user_id)
+    references public.cloud_profiles(id, user_id) on delete cascade
 );
 
 create table if not exists public.billing_records (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  import_batch_id uuid not null references public.import_batches(id) on delete cascade,
+  import_batch_id uuid not null,
   provider text not null check (provider in ('aws','azure','gcp')),
   resource_id text,
   resource_name text,
@@ -44,7 +48,9 @@ create table if not exists public.billing_records (
   charge_type text,
   source_row_hash text not null,
   created_at timestamptz not null default now(),
-  unique (import_batch_id, source_row_hash)
+  unique (import_batch_id, source_row_hash),
+  foreign key (import_batch_id, user_id)
+    references public.import_batches(id, user_id) on delete cascade
 );
 
 create table if not exists public.resource_metrics (
@@ -58,7 +64,9 @@ create table if not exists public.resource_metrics (
   memory_utilization_pct numeric(6,3) check (memory_utilization_pct between 0 and 100),
   active_hours numeric(12,4) check (active_hours >= 0),
   observed_hours numeric(12,4) check (observed_hours > 0),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  foreign key (import_batch_id, user_id)
+    references public.import_batches(id, user_id) on delete cascade
 );
 
 create table if not exists public.optimization_recommendations (
