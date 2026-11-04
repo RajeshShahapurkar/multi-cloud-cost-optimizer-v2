@@ -28,6 +28,9 @@ def test_metrics_sample_flags_underutilized_resource():
     findings = detect_underutilized(rows)
     assert len(findings) == 1
     assert findings[0]["resource_id"] == "i-aws-web-01"
+    assert findings[0]["category"] == "right_sizing_candidate"
+    assert findings[0]["evidence"]["current_configuration"] == {"vcpu":4,"memory_gb":16.0}
+    assert findings[0]["evidence"]["candidate_configuration"] == {"vcpu":2,"memory_gb":8.0}
 
 def test_cost_anomaly_requires_history():
     rows = [
@@ -62,3 +65,17 @@ def test_no_idle_finding_without_activity_metric():
         for i in (1,2,3)
     ]
     assert detect_idle(rows) == []
+
+
+def test_underutilized_without_provisioned_capacity_does_not_claim_specific_instance_size():
+    rows = [
+        {"provider":"aws","resource_id":"vm-no-capacity","cpu_utilization_pct":5,
+         "memory_utilization_pct":10,"provisioned_vcpu":None,"provisioned_memory_gb":None,
+         "region":None}
+        for _ in range(3)
+    ]
+    findings = detect_underutilized(rows)
+    assert len(findings) == 1
+    assert findings[0]["category"] == "underutilized"
+    assert findings[0]["target_vcpu"] is None
+    assert findings[0]["target_memory_gb"] is None
