@@ -65,3 +65,15 @@ def test_comparison_requires_auth():
 def test_pdf_report_requires_auth():
     response = client.get("/api/reports/summary.pdf")
     assert response.status_code == 401
+
+
+def test_metrics_preview_counts_exact_duplicate_rows():
+    csv = (b"resource_id,observed_at,cpu_utilization_pct,memory_utilization_pct,active_hours,observed_hours\\n"
+           b"vm-1,2026-10-01T00:00:00Z,10,20,1,1\\n"
+           b"vm-1,2026-10-01T00:00:00Z,10,20,1,1\\n")
+    response = client.post("/api/uploads/metrics/preview", data={"provider":"aws"},
+        files={"file":("metrics.csv",csv,"text/csv")})
+    assert response.status_code == 200
+    assert response.json()["total_rows"] == 2
+    assert response.json()["valid_rows"] == 1
+    assert response.json()["duplicate_rows"] == 1
