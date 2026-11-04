@@ -44,8 +44,16 @@ async def metrics_preview(provider: str = Form(...), file: UploadFile = File(...
     content = await read_csv(file)
     try: rows, errors = parse_metrics(content, provider)
     except Exception as exc: raise HTTPException(422, f"Could not parse metrics CSV: {exc}") from exc
-    return {"provider":provider,"total_rows":len(rows)+len(errors),"valid_rows":len(rows),
-            "invalid_rows":len(errors),"records":rows[:100],"errors":errors[:100]}
+    seen, unique, duplicates = set(), [], 0
+    for row in rows:
+        fingerprint = row["source_row_hash"]
+        if fingerprint in seen:
+            duplicates += 1
+        else:
+            seen.add(fingerprint)
+            unique.append(row)
+    return {"provider":provider,"total_rows":len(rows)+len(errors),"valid_rows":len(unique),
+            "duplicate_rows":duplicates,"invalid_rows":len(errors),"records":unique[:100],"errors":errors[:100]}
 
 
 @router.post("/uploads/pricing/preview")
