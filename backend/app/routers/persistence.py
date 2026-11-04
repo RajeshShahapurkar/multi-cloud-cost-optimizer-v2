@@ -37,9 +37,16 @@ async def import_metrics(provider: str=Form(...), file: UploadFile=File(...),
     content=await read_csv(file)
     try: metrics,errors=parse_metrics(content,provider)
     except Exception as exc: raise HTTPException(422,f"Could not parse metrics CSV: {exc}") from exc
-    result=await persist_metrics_import(db,user["id"],provider,file.filename or "metrics.csv",metrics,errors)
-    return {"provider":provider,"total_rows":len(metrics)+len(errors),"valid_rows":len(metrics),
-            "invalid_rows":len(errors),**result,
+    seen=set(); unique=[]; duplicates=0
+    for row in metrics:
+        fingerprint=row["source_row_hash"]
+        if fingerprint in seen:
+            duplicates+=1
+        else:
+            seen.add(fingerprint); unique.append(row)
+    result=await persist_metrics_import(db,user["id"],provider,file.filename or "metrics.csv",unique,errors,duplicates)
+    return {"provider":provider,"total_rows":len(metrics)+len(errors),"valid_rows":len(unique),
+            "invalid_rows":len(errors),"duplicate_rows":duplicates,**result,
             "message":"Resource metrics were imported and recommendations were saved."}
 
 
