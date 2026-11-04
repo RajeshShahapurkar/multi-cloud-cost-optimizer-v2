@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Activity, AlertTriangle, ArrowUpFromLine, BarChart3, Check, Cloud, FileSpreadsheet, Gauge, LoaderCircle, LogOut, RefreshCw, ShieldCheck, UploadCloud, Wallet, X } from "lucide-react";
+import { Activity, AlertTriangle, ArrowUpFromLine, BarChart3, Check, Cloud, FileDown, FileSpreadsheet, Gauge, GitCompare, LoaderCircle, LogOut, RefreshCw, ShieldCheck, TrendingUp, UploadCloud, Wallet, X } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { createClient } from "@/lib/supabase/client";
 
@@ -21,6 +21,8 @@ type DashboardData = {
     top_resources:{resource_id:string;service_name:string;currency:string;cost:number}[];
   };
   recommendations:Recommendation[];
+  cost_anomalies:{provider:string;currency:string;period:string;current_cost:number;baseline_average:number;increase_pct:number;category:string;severity:string}[];
+  forecasts:{provider:string;currency:string;month:string;forecast_cost:number;method:string;history_months:number;limitations:string}[];
   imports:ImportRow[];
 };
 
@@ -33,10 +35,18 @@ export default function DashboardPage(){
   const [loading,setLoading]=useState(true);
   const [busy,setBusy]=useState(false);
   const [provider,setProvider]=useState<Provider>("aws");
-  const [kind,setKind]=useState<"billing"|"metrics">("billing");
+  const [kind,setKind]=useState<"billing"|"metrics"|"pricing">("billing");
   const [file,setFile]=useState<File|null>(null);
   const [notice,setNotice]=useState("");
   const [error,setError]=useState("");
+  const [compareRegion,setCompareRegion]=useState("us-east-1");
+  const [compareVcpu,setCompareVcpu]=useState("2");
+  const [compareMemory,setCompareMemory]=useState("8");
+  const [compareStorage,setCompareStorage]=useState("100");
+  const [compareHours,setCompareHours]=useState("730");
+  const [compareCurrency,setCompareCurrency]=useState("USD");
+  const [compareBusy,setCompareBusy]=useState(false);
+  const [compareResult,setCompareResult]=useState<any>(null);
 
   const loadDashboard=useCallback(async(current:any)=>{
     if(!current?.access_token)return;
@@ -75,13 +85,15 @@ export default function DashboardPage(){
     setBusy(true);setError("");setNotice("");
     const form=new FormData();form.append("provider",provider);form.append("file",file);
     try{
-      const endpoint=kind==="billing"?"imports/billing":"imports/metrics";
+      const endpoint=kind==="billing"?"imports/billing":kind==="metrics"?"imports/metrics":"imports/pricing";
       const response=await fetch(API+"/api/"+endpoint,{method:"POST",headers:{Authorization:"Bearer "+session.access_token},body:form});
       const payload=await response.json();
       if(!response.ok)throw new Error(payload.detail??"Import failed.");
       setNotice(kind==="billing"
         ?"Imported "+payload.inserted_records+" billing rows for "+provider.toUpperCase()+"."
-        :"Imported "+payload.inserted_metrics+" metrics rows and generated "+(payload.recommendations?.length??0)+" recommendations.");
+        :kind==="metrics"
+          ?"Imported "+payload.inserted_metrics+" metrics rows and generated "+(payload.recommendations?.length??0)+" recommendations."
+          :"Imported "+payload.inserted_prices+" user-provided pricing records for "+provider.toUpperCase()+".");
       setFile(null);
       const input=document.getElementById("csv-file") as HTMLInputElement|null;
       if(input)input.value="";
@@ -102,6 +114,39 @@ export default function DashboardPage(){
       if(!response.ok)throw new Error(payload.detail??"Could not update recommendation.");
       await loadDashboard(session);
     }catch(e){setError(e instanceof Error?e.message:"Recommendation update failed.");}
+  }
+
+
+  async function compareCloudCosts(){
+    if(!session?.access_token){setError("Please sign in again.");return;}
+    setCompareBusy(true);setCompareResult(null);setError("");
+    try{
+      const response=await fetch(API+"/api/comparison/estimate",{
+        method:"POST",
+        headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token},
+        body:JSON.stringify({
+          region:compareRegion,vcpu:Number(compareVcpu),memory_gb:Number(compareMemory),
+          storage_gb:Number(compareStorage),hours_per_month:Number(compareHours),currency:compareCurrency.toUpperCase()
+        })
+      });
+      const payload=await response.json();
+      if(!response.ok)throw new Error(payload.detail??"Cost comparison failed.");
+      setCompareResult(payload);
+    }catch(e){setError(e instanceof Error?e.message:"Cost comparison failed.");}
+    finally{setCompareBusy(false);}
+  }
+
+  async function downloadReport(){
+    if(!session?.access_token){setError("Please sign in again.");return;}
+    try{
+      const response=await fetch(API+"/api/reports/summary.pdf",{headers:{Authorization:"Bearer "+session.access_token}});
+      if(!response.ok){const payload=await response.json();throw new Error(payload.detail??"Could not generate the PDF report.");}
+      const blob=await response.blob();
+      const url=URL.createObjectURL(blob);
+      const anchor=document.createElement("a");
+      anchor.href=url;anchor.download="multi-cloud-cost-optimizer-report.pdf";anchor.click();
+      URL.revokeObjectURL(url);
+    }catch(e){setError(e instanceof Error?e.message:"PDF download failed.");}
   }
 
   async function signOut(){
@@ -145,8 +190,8 @@ export default function DashboardPage(){
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6">
           <div className="flex items-center justify-between"><div><h2 className="text-lg font-semibold">Import cloud data</h2><p className="mt-1 text-sm text-slate-400">Files are parsed and saved to your private database.</p></div><UploadCloud className="h-6 w-6 text-cyan-300"/></div>
           <div className="mt-5 grid grid-cols-3 gap-2">{providerOptions.map(p=><button key={p} onClick={()=>setProvider(p)} className={"rounded-xl border px-3 py-3 text-sm font-semibold "+(provider===p?"border-cyan-300 bg-cyan-300/10 text-cyan-200":"border-slate-700 text-slate-400 hover:bg-slate-800")}>{p==="gcp"?"Google Cloud":p.toUpperCase()}</button>)}</div>
-          <div className="mt-4 grid grid-cols-2 gap-2"><button onClick={()=>setKind("billing")} className={"rounded-xl border px-3 py-3 text-sm "+(kind==="billing"?"border-blue-300 bg-blue-300/10 text-blue-200":"border-slate-700 text-slate-400")}><FileSpreadsheet className="mr-2 inline h-4 w-4"/>Billing export</button><button onClick={()=>setKind("metrics")} className={"rounded-xl border px-3 py-3 text-sm "+(kind==="metrics"?"border-blue-300 bg-blue-300/10 text-blue-200":"border-slate-700 text-slate-400")}><Gauge className="mr-2 inline h-4 w-4"/>Resource metrics</button></div>
-          <label htmlFor="csv-file" className="mt-4 flex cursor-pointer flex-col items-center rounded-xl border border-dashed border-slate-600 bg-slate-950/70 px-4 py-7 text-center hover:border-cyan-300/70"><UploadCloud className="h-7 w-7 text-cyan-300"/><span className="mt-2 text-sm font-medium">{file?file.name:"Choose a CSV file"}</span><span className="mt-1 text-xs text-slate-500">CSV only · 10 MB maximum</span></label>
+          <div className="mt-4 grid grid-cols-3 gap-2"><button onClick={()=>setKind("billing")} className={"rounded-xl border px-2 py-3 text-xs sm:text-sm "+(kind==="billing"?"border-blue-300 bg-blue-300/10 text-blue-200":"border-slate-700 text-slate-400")}><FileSpreadsheet className="mr-1 inline h-4 w-4"/>Billing</button><button onClick={()=>setKind("metrics")} className={"rounded-xl border px-2 py-3 text-xs sm:text-sm "+(kind==="metrics"?"border-blue-300 bg-blue-300/10 text-blue-200":"border-slate-700 text-slate-400")}><Gauge className="mr-1 inline h-4 w-4"/>Metrics</button><button onClick={()=>setKind("pricing")} className={"rounded-xl border px-2 py-3 text-xs sm:text-sm "+(kind==="pricing"?"border-blue-300 bg-blue-300/10 text-blue-200":"border-slate-700 text-slate-400")}><GitCompare className="mr-1 inline h-4 w-4"/>Pricing</button></div>
+          <label htmlFor="csv-file" className="mt-4 flex cursor-pointer flex-col items-center rounded-xl border border-dashed border-slate-600 bg-slate-950/70 px-4 py-7 text-center hover:border-cyan-300/70"><UploadCloud className="h-7 w-7 text-cyan-300"/><span className="mt-2 text-sm font-medium">{file?file.name:"Choose a CSV file"}</span><span className="mt-1 text-xs text-slate-500">CSV only · 10 MB maximum · {kind==="pricing"?"user-provided rate catalogue":kind==="metrics"?"CPU, memory and activity metrics":"provider billing export"}</span></label>
           <input id="csv-file" type="file" accept=".csv,text/csv" className="sr-only" onChange={e=>setFile(e.target.files?.[0]??null)}/>
           <button disabled={!file||busy} onClick={upload} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 font-semibold text-slate-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50">{busy?<LoaderCircle className="h-4 w-4 animate-spin"/>:<ArrowUpFromLine className="h-4 w-4"/>}{busy?"Importing data…":"Import "+kind+" CSV"}</button>
           <p className="mt-3 text-xs leading-5 text-slate-500">Billing files provide actual charges. CPU and memory-based recommendations require a separate metrics CSV; missing metrics are never assumed to mean idle resources.</p>
@@ -169,7 +214,7 @@ export default function DashboardPage(){
       </section>
 
       <section className="mt-7 rounded-2xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6">
-        <h2 className="font-semibold">Import history</h2>
+        <div className="flex items-center justify-between gap-3"><h2 className="font-semibold">Import history</h2><button onClick={downloadReport} className="flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300 hover:bg-slate-800"><FileDown className="h-4 w-4"/>Download PDF report</button></div>
         {!(data?.imports?.length)?<Empty text="Your uploaded billing and metrics files will be listed here."/>:<div className="mt-4 overflow-x-auto"><table className="w-full min-w-[600px] text-left text-sm"><thead className="text-xs uppercase text-slate-500"><tr><th className="py-3">File</th><th>Type</th><th>Rows</th><th>Status</th><th>Date</th></tr></thead><tbody>{data.imports.map(item=><tr key={item.id} className="border-t border-slate-800"><td className="py-3 pr-4">{item.original_filename}</td><td className="pr-4 capitalize">{item.data_type}</td><td className="pr-4">{item.valid_rows}/{item.total_rows}</td><td className="pr-4 text-emerald-300">{item.status}</td><td className="text-slate-400">{new Date(item.created_at).toLocaleDateString()}</td></tr>)}</tbody></table></div>}
       </section>
       <footer className="mt-8 flex flex-wrap justify-between gap-2 border-t border-slate-800 pt-5 text-xs text-slate-500"><span>Multi-Cloud Cost Optimizer · CSV analysis mode</span><span>Recommendations are advisory; no cloud resource is changed automatically.</span></footer>
@@ -179,3 +224,4 @@ export default function DashboardPage(){
 
 function Stat({icon,label,value}:{icon:React.ReactNode;label:string;value:number}){return <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5"><div className="flex items-center justify-between"><span className="text-sm text-slate-400">{label}</span><span className="rounded-lg bg-cyan-300/10 p-2 text-cyan-300">{icon}</span></div><p className="mt-4 text-3xl font-bold tabular-nums">{value.toLocaleString()}</p></div>}
 function Empty({text}:{text:string}){return <div className="flex min-h-32 items-center justify-center px-3 text-center text-sm text-slate-500">{text}</div>}
+function Field({label,value,onChange,type="text"}:{label:string;value:string;onChange:(value:string)=>void;type?:string}){return <label className="block text-xs text-slate-400">{label}<input type={type} value={value} onChange={event=>onChange(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 outline-none focus:border-cyan-300"/></label>}
