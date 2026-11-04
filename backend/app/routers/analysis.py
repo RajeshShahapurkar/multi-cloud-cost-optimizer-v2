@@ -5,7 +5,7 @@ from app.parsers.aws import parse_aws_billing
 from app.parsers.azure import parse_azure_billing
 from app.parsers.gcp import parse_gcp_billing
 from app.routers.uploads import read_csv, PARSERS
-from app.services.optimization import detect_underutilized, detect_cost_anomalies, estimate_savings
+from app.services.optimization import detect_idle, detect_underutilized, detect_cost_anomalies, estimate_savings
 
 router = APIRouter(tags=["optimization analysis"])
 
@@ -27,7 +27,7 @@ async def analyse_metrics(provider: str = Form(...), file: UploadFile = File(...
     content = await read_csv(file)
     try:
         metrics, errors = parse_metrics(content, provider)
-        recommendations = detect_underutilized(metrics)
+        recommendations = detect_idle(metrics) + detect_underutilized(metrics)
     except Exception as exc:
         raise HTTPException(422, f"Could not analyse metrics CSV: {exc}") from exc
     return {
