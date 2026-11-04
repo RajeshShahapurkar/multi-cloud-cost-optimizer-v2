@@ -1,6 +1,6 @@
 import io
 import pandas as pd
-from app.parsers.common import find_column, parse_datetime, parse_decimal
+from app.parsers.common import find_column, parse_datetime, parse_decimal, clean
 
 ALIASES = {
  "resource_id":["resource_id","resourceid","resource id"],
@@ -23,12 +23,12 @@ def parse_metrics(content: bytes, provider: str):
     rows, errors = [], []
     for index, source in frame.iterrows():
         observed = parse_datetime(source[mapping["observed_at"]])
-        resource = str(source[mapping["resource_id"]]).strip()
+        resource = clean(source[mapping["resource_id"]])
         if not observed or not resource:
             errors.append({"row":int(index)+2,"error":"Missing/invalid resource_id or observed_at"}); continue
         item = {"provider":provider,"resource_id":resource,"observed_at":observed.isoformat()}
-        item["region"] = str(source[mapping["region"]]).strip() if mapping["region"] and pd.notna(source[mapping["region"]]) else None
-        item["pricing_currency"] = str(source[mapping["pricing_currency"]]).strip().upper() if mapping["pricing_currency"] and pd.notna(source[mapping["pricing_currency"]]) else None
+        item["region"] = clean(source[mapping["region"]]) if mapping["region"] else None
+        item["pricing_currency"] = clean(source[mapping["pricing_currency"]]).upper() if mapping["pricing_currency"] else None
         for key in ("cpu_utilization_pct","memory_utilization_pct","active_hours","observed_hours","provisioned_vcpu","provisioned_memory_gb"):
             col = mapping[key]
             value = parse_decimal(source[col]) if col else None
