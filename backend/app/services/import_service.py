@@ -2,7 +2,8 @@ from __future__ import annotations
 from fastapi import HTTPException
 from app.services.supabase_rest import SupabaseUserClient
 from app.services.billing_analytics import build_cost_summary
-from app.services.optimization import detect_idle, detect_underutilized
+from app.services.optimization import detect_idle, detect_underutilized, detect_cost_anomalies
+from app.services.forecasting import aggregate_monthly_by_provider, forecast_monthly_costs
 
 def _items(value):
     return value if isinstance(value, list) else ([value] if value else [])
@@ -113,7 +114,14 @@ async def load_dashboard_data(db: SupabaseUserClient):
         params={"select":"id,data_type,original_filename,status,total_rows,valid_rows,invalid_rows,duplicate_rows,created_at,cloud_profile_id",
                 "order":"created_at.desc","limit":"100"})
     summary = build_cost_summary(billing or [])
+    monthly = aggregate_monthly_by_provider(billing or [])
+    anomalies = detect_cost_anomalies([
+        {"provider":row["provider"],"currency":row["currency"],"period":row["month"],"cost":row["cost"]}
+        for row in monthly
+    ])
+    forecasts = forecast_monthly_costs(monthly)
     return {"billing_records":len(billing or []),"metric_records":len(metrics or []),
             "providers":sorted({row["provider"] for row in billing or []}),
             "summary":summary,"recommendations":recommendations or [],
+            "cost_anomalies":anomalies,"forecasts":forecasts,
             "imports":imports or [],"recent_metrics":(metrics or [])[:200]}
