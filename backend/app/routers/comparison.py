@@ -25,8 +25,15 @@ async def compare_cloud_costs(request:ComparisonRequest,authorization:str|None=H
         "order":"pricing_date.desc",
         "limit":"1000",
     })
-    best_by_provider={}
+    latest_by_configuration={}
     for row in rows or []:
+        config_key=(row["provider"],row["instance_type"],row["vcpu"],str(row["memory_gb"]),row["region"],row["currency"])
+        previous=latest_by_configuration.get(config_key)
+        if previous is None or row["pricing_date"]>previous["pricing_date"]:
+            latest_by_configuration[config_key]=row
+
+    best_by_provider={}
+    for row in latest_by_configuration.values():
         provider=row["provider"]
         monthly=(float(row["compute_hourly_cost"])*request.hours_per_month)+(
             float(row["storage_gb_month_cost"])*request.storage_gb
