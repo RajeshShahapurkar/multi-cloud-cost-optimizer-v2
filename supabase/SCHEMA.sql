@@ -9,7 +9,8 @@ create table if not exists public.cloud_profiles (
   provider text not null check (provider in ('aws','azure','gcp')),
   display_name text not null,
   created_at timestamptz not null default now(),
-  unique (id, user_id)
+  unique (id, user_id),
+  unique (user_id, provider)
 );
 
 create table if not exists public.import_batches (
@@ -78,12 +79,15 @@ create table if not exists public.optimization_recommendations (
   severity text not null check (severity in ('low','medium','high','critical')),
   title text not null,
   explanation text not null,
+  import_batch_id uuid,
   evidence jsonb not null default '{}'::jsonb,
   estimated_monthly_savings numeric(20,8),
   currency char(3),
   status text not null default 'new' check (status in ('new','accepted','dismissed','implemented')),
   created_at timestamptz not null default now(),
-  reviewed_at timestamptz
+  reviewed_at timestamptz,
+  foreign key (import_batch_id, user_id)
+    references public.import_batches(id, user_id) on delete cascade
 );
 
 create table if not exists public.cost_anomalies (
@@ -105,6 +109,11 @@ create index if not exists idx_billing_user_provider_date on public.billing_reco
 create index if not exists idx_billing_user_resource on public.billing_records(user_id, provider, resource_id);
 create index if not exists idx_metrics_user_resource_time on public.resource_metrics(user_id, provider, resource_id, observed_at);
 create index if not exists idx_recommendations_user_status on public.optimization_recommendations(user_id, status);
+create index if not exists idx_import_batches_cloud_profile_user on public.import_batches(cloud_profile_id, user_id);
+create index if not exists idx_billing_records_import_batch_user on public.billing_records(import_batch_id, user_id);
+create index if not exists idx_resource_metrics_import_batch_user on public.resource_metrics(import_batch_id, user_id);
+create index if not exists idx_cost_anomalies_user on public.cost_anomalies(user_id);
+create index if not exists idx_recommendations_import_batch_user on public.optimization_recommendations(import_batch_id, user_id);
 
 -- Expose these tables to the Supabase Data API for signed-in users.
 -- RLS remains the row-level authorization boundary.
