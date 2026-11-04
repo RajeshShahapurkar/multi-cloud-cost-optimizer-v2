@@ -58,3 +58,10 @@ def test_right_sizing_savings_requires_both_catalogue_rates():
         EmptyDb(),"aws","us-east-1","USD",4,16.0,2,8.0
     ))
     assert result is None
+
+
+def test_pricing_rejects_non_finite_numeric_values():
+    csv=b"region,instance_type,vcpu,memory_gb,compute_hourly_cost,storage_gb_month_cost,currency,pricing_date\nus-east-1,tiny,2,8,NaN,0.1,USD,2026-10-01\n"
+    rows,errors=parse_pricing(csv,"aws")
+    assert rows==[]
+    assert errors[0]["error"].startswith("Compute and storage rates")
