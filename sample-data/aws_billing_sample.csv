@@ -1,0 +1,3 @@
+service_name,usage_start,usage_end,resource_id,resource_name,resource_type,region,usage_quantity,usage_unit,cost,currency,charge_type
+EC2,2026-10-01T00:00:00Z,2026-10-02T00:00:00Z,i-aws-web-01,web-server,Virtual Machine,us-east-1,24,Hours,12.50,USD,Usage
+S3,2026-10-01T00:00:00Z,2026-10-02T00:00:00Z,bucket-logs,logs-bucket,Object Storage,us-east-1,100,GB-month,2.20,USD,Usage
