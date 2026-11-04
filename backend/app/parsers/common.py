@@ -30,8 +30,11 @@ def find_column(columns, aliases):
 
 def parse_decimal(value: Any):
     if value is None or pd.isna(value) or str(value).strip() == "": return None
-    try: return Decimal(str(value).strip().replace(",", "").replace("$", "").replace("₹", ""))
-    except InvalidOperation: return None
+    try:
+        parsed = Decimal(str(value).strip().replace(",", "").replace("$", "").replace("₹", ""))
+        return parsed if parsed.is_finite() else None
+    except InvalidOperation:
+        return None
 
 def parse_datetime(value: Any):
     if value is None or pd.isna(value) or str(value).strip() == "": return None
