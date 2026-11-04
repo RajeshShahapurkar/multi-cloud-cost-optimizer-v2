@@ -329,7 +329,11 @@ export type Database = {
           memory_utilization_pct: number | null
           observed_at: string
           observed_hours: number | null
+          pricing_currency: string | null
           provider: string
+          provisioned_memory_gb: number | null
+          provisioned_vcpu: number | null
+          region: string | null
           resource_id: string
           user_id: string
         }
@@ -342,7 +346,11 @@ export type Database = {
           memory_utilization_pct?: number | null
           observed_at: string
           observed_hours?: number | null
+          pricing_currency?: string | null
           provider: string
+          provisioned_memory_gb?: number | null
+          provisioned_vcpu?: number | null
+          region?: string | null
           resource_id: string
           user_id: string
         }
@@ -355,7 +363,11 @@ export type Database = {
           memory_utilization_pct?: number | null
           observed_at?: string
           observed_hours?: number | null
+          pricing_currency?: string | null
           provider?: string
+          provisioned_memory_gb?: number | null
+          provisioned_vcpu?: number | null
+          region?: string | null
           resource_id?: string
           user_id?: string
         }
