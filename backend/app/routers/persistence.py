@@ -3,9 +3,10 @@ from app.parsers.aws import parse_aws_billing
 from app.parsers.azure import parse_azure_billing
 from app.parsers.gcp import parse_gcp_billing
 from app.parsers.metrics import parse_metrics
+from app.parsers.pricing import parse_pricing
 from app.routers.uploads import read_csv, PARSERS
 from app.services.supabase_rest import get_supabase_client_from_authorization
-from app.services.import_service import persist_billing_import, persist_metrics_import, load_dashboard_data
+from app.services.import_service import persist_billing_import, persist_metrics_import, persist_pricing_import, load_dashboard_data
 
 router = APIRouter(tags=["authenticated imports and dashboard"])
 
@@ -40,6 +41,22 @@ async def import_metrics(provider: str=Form(...), file: UploadFile=File(...),
     return {"provider":provider,"total_rows":len(metrics)+len(errors),"valid_rows":len(metrics),
             "invalid_rows":len(errors),**result,
             "message":"Resource metrics were imported and recommendations were saved."}
+
+
+@router.post("/imports/pricing")
+async def import_pricing(provider: str=Form(...), file: UploadFile=File(...),
+                         authorization: str|None=Header(default=None)):
+    db,user=await get_supabase_client_from_authorization(authorization)
+    provider=provider.lower()
+    if provider not in PARSERS:
+        raise HTTPException(422,"Provider must be aws, azure or gcp")
+    content=await read_csv(file)
+    try: prices,errors=parse_pricing(content,provider)
+    except Exception as exc: raise HTTPException(422,f"Could not parse pricing CSV: {exc}") from exc
+    result=await persist_pricing_import(db,user["id"],provider,file.filename or "pricing.csv",prices,errors)
+    return {"provider":provider,"total_rows":len(prices)+len(errors),"valid_rows":len(prices),
+            "invalid_rows":len(errors),**result,
+            "message":"Your pricing catalogue entries were imported. Estimates will use only these user-provided rates."}
 
 @router.get("/dashboard")
 async def dashboard(authorization: str|None=Header(default=None)):
