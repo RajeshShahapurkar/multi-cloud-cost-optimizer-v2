@@ -69,6 +69,43 @@ async def persist_billing_import(db: SupabaseUserClient, user_id: str, provider:
         raise
     return {"import_batch":batch,"summary":build_cost_summary(records),"inserted_records":len(db_rows)}
 
+async def estimate_compute_savings(db: SupabaseUserClient, provider: str, region: str | None,
+                                   currency: str | None, current_vcpu: int | None,
+                                   current_memory_gb: float | None, target_vcpu: int | None,
+                                   target_memory_gb: float | None):
+    if not all([region, currency, current_vcpu, current_memory_gb, target_vcpu, target_memory_gb]):
+        return None
+    async def latest_rate(vcpu, memory_gb):
+        result = await db.request("GET", "/rest/v1/pricing_catalogue", params={
+            "select":"compute_hourly_cost,storage_gb_month_cost,currency,pricing_date",
+            "provider":f"eq.{provider}","region":f"eq.{region}",
+            "currency":f"eq.{currency}","vcpu":f"eq.{vcpu}",
+            "memory_gb":f"eq.{memory_gb}","order":"pricing_date.desc","limit":"1"
+        })
+        return result[0] if result else None
+
+    current = await latest_rate(current_vcpu, current_memory_gb)
+    target = await latest_rate(target_vcpu, target_memory_gb)
+    if not current or not target or current["currency"] != target["currency"]:
+        return None
+    hours = 730.0
+    current_compute = float(current["compute_hourly_cost"]) * hours
+    target_compute = float(target["compute_hourly_cost"]) * hours
+    savings = current_compute - target_compute
+    if savings <= 0:
+        return None
+    return {
+        "amount":round(savings,2),"currency":current["currency"],
+        "assumptions":{
+            "hours_per_month":hours,
+            "current_compute_hourly_cost":float(current["compute_hourly_cost"]),
+            "target_compute_hourly_cost":float(target["compute_hourly_cost"]),
+            "current_pricing_date":current["pricing_date"],
+            "target_pricing_date":target["pricing_date"],
+            "excludes_storage_network_transfer_taxes_and_discounts":True
+        }
+    }
+
 async def persist_metrics_import(db: SupabaseUserClient, user_id: str, provider: str, filename: str,
                                  metrics: list[dict], errors: list[dict]):
     profile = await get_or_create_profile(db, user_id, provider)
@@ -80,16 +117,41 @@ async def persist_metrics_import(db: SupabaseUserClient, user_id: str, provider:
         "cpu_utilization_pct":row.get("cpu_utilization_pct"),
         "memory_utilization_pct":row.get("memory_utilization_pct"),
         "active_hours":row.get("active_hours"),"observed_hours":row.get("observed_hours"),
+        "region":row.get("region"),"provisioned_vcpu":row.get("provisioned_vcpu"),
+        "provisioned_memory_gb":row.get("provisioned_memory_gb"),
+        "pricing_currency":row.get("pricing_currency"),
     } for row in metrics]
     findings = detect_idle(metrics) + detect_underutilized(metrics)
-    recommendation_rows = [{
-        "user_id":user_id,"import_batch_id":batch["id"],"provider":provider,
-        "resource_id":item.get("resource_id"),"category":item["category"],
-        "severity":item["severity"],
-        "title":"Potential idle resource" if item["category"]=="idle_candidate" else "Potentially underutilized resource",
-        "explanation":item["recommendation"]+" "+item.get("limitations",""),
-        "evidence":item.get("evidence",{}),"status":"new",
-    } for item in findings]
+    recommendation_rows = []
+    for item in findings:
+        saving = None
+        if item["category"] == "right_sizing_candidate":
+            saving = await estimate_compute_savings(
+                db, provider, item.get("region"),
+                next((row.get("pricing_currency") for row in metrics
+                      if row["resource_id"] == item.get("resource_id") and row.get("pricing_currency")), None),
+                item.get("provisioned_vcpu"), item.get("provisioned_memory_gb"),
+                item.get("target_vcpu"), item.get("target_memory_gb")
+            )
+        evidence = dict(item.get("evidence", {}))
+        explanation = item["recommendation"] + " " + item.get("limitations", "")
+        if saving:
+            evidence["estimated_compute_savings"] = saving
+            explanation += f' Estimated compute-only savings: {saving["currency"]} {saving["amount"]:.2f}/month using your uploaded pricing catalogue.'
+        recommendation_rows.append({
+            "user_id":user_id,"import_batch_id":batch["id"],"provider":provider,
+            "resource_id":item.get("resource_id"),"category":item["category"],
+            "severity":item["severity"],
+            "title":(
+                "Potential idle resource" if item["category"]=="idle_candidate"
+                else "Right-sizing candidate" if item["category"]=="right_sizing_candidate"
+                else "Potentially underutilized resource"
+            ),
+            "explanation":explanation,
+            "evidence":evidence,"status":"new",
+            "estimated_monthly_savings":saving["amount"] if saving else None,
+            "currency":saving["currency"] if saving else None
+        })
     try:
         await insert_in_chunks(db, "/rest/v1/resource_metrics", db_rows)
         if recommendation_rows:
