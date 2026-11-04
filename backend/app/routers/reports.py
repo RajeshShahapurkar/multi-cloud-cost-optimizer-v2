@@ -7,6 +7,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from xml.sax.saxutils import escape
 from app.services.supabase_rest import get_supabase_client_from_authorization
 from app.services.import_service import load_dashboard_data
 
@@ -23,7 +24,7 @@ async def summary_report(authorization:str|None=Header(default=None)):
         Paragraph("Multi-Cloud Cost Optimizer",styles["Title"]),
         Paragraph("Cloud spend and optimization summary",styles["Heading2"]),
         Paragraph("Generated: "+datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),styles["Normal"]),
-        Paragraph("Account: "+str(user.get("email") or "Authenticated user"),styles["Normal"]),
+        Paragraph("Account: "+escape(str(user.get("email") or "Authenticated user")),styles["Normal"]),
         Spacer(1,8*mm),
         Paragraph("Billing overview",styles["Heading2"]),
     ]
@@ -44,7 +45,7 @@ async def summary_report(authorization:str|None=Header(default=None)):
     story += [Spacer(1,5*mm),Paragraph("Spend by service",styles["Heading2"])]
     services=data["summary"].get("service_costs",[])[:15]
     if services:
-        rows=[["Service","Currency","Cost"]]+[[x["service_name"],x["currency"],f'{x["cost"]:,.2f}'] for x in services]
+        rows=[["Service","Currency","Cost"]]+[[escape(str(x["service_name"])),escape(str(x["currency"])),f'{x["cost"]:,.2f}'] for x in services]
         table=Table(rows,hAlign="LEFT",colWidths=[85*mm,30*mm,40*mm],repeatRows=1)
         table.setStyle(TableStyle([
             ("BACKGROUND",(0,0),(-1,0),colors.HexColor("#1E293B")),
@@ -60,9 +61,9 @@ async def summary_report(authorization:str|None=Header(default=None)):
     if recs:
         for rec in recs:
             story.append(Paragraph(
-                f'<b>{rec.get("title","Recommendation")}</b> — {rec.get("provider","").upper()} / {rec.get("resource_id") or "resource"}',
+                f'<b>{escape(str(rec.get("title","Recommendation")))}</b> — {escape(str(rec.get("provider","")).upper())} / {escape(str(rec.get("resource_id") or "resource"))}',
                 styles["Normal"]))
-            story.append(Paragraph(str(rec.get("explanation","")),styles["BodyText"]))
+            story.append(Paragraph(escape(str(rec.get("explanation",""))),styles["BodyText"]))
             story.append(Spacer(1,2*mm))
     else:
         story.append(Paragraph("No recommendations have been generated from uploaded metrics.",styles["Normal"]))
