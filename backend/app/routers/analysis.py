@@ -6,6 +6,7 @@ from app.parsers.azure import parse_azure_billing
 from app.parsers.gcp import parse_gcp_billing
 from app.routers.uploads import read_csv, PARSERS
 from app.services.optimization import detect_idle, detect_underutilized, detect_cost_anomalies, estimate_savings
+from app.services.billing_analytics import build_cost_summary
 
 router = APIRouter(tags=["optimization analysis"])
 
@@ -18,6 +19,36 @@ class PeriodCost(BaseModel):
 class SavingsRequest(BaseModel):
     current_monthly_cost: float = Field(ge=0)
     target_monthly_cost: float = Field(ge=0)
+
+@router.post("/analysis/billing")
+async def analyse_billing(provider: str = Form(...), file: UploadFile = File(...)):
+    provider = provider.lower()
+    if provider not in PARSERS:
+        raise HTTPException(422, "Provider must be aws, azure or gcp")
+    content = await read_csv(file)
+    try:
+        records, errors = PARSERS[provider](content)
+    except Exception as exc:
+        raise HTTPException(422, f"Could not analyse {provider} billing CSV: {exc}") from exc
+    seen, unique, duplicate_rows = set(), [], 0
+    for row in records:
+        fingerprint = row["source_row_hash"]
+        if fingerprint in seen:
+            duplicate_rows += 1
+        else:
+            seen.add(fingerprint)
+            unique.append(row)
+    summary = build_cost_summary(unique)
+    return {
+        "provider": provider,
+        "total_rows": len(records) + len(errors),
+        "valid_rows": len(unique),
+        "duplicate_rows": duplicate_rows,
+        "invalid_rows": len(errors),
+        **summary,
+        "errors": errors[:100],
+        "note": "Analysis is based only on this uploaded file. Records are not persisted yet."
+    }
 
 @router.post("/analysis/metrics")
 async def analyse_metrics(provider: str = Form(...), file: UploadFile = File(...)):
