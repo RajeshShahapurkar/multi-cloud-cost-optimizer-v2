@@ -43,14 +43,14 @@ def test_dashboard_requires_bearer_token():
     assert response.status_code == 401
 
 def test_billing_import_requires_bearer_token():
-    data = b"service_name,usage_start,cost,currency\\nEC2,2026-10-01,3.5,USD\\n"
+    data = b"service_name,usage_start,cost,currency\nEC2,2026-10-01,3.5,USD\n"
     response = client.post("/api/imports/billing", data={"provider":"aws"},
         files={"file":("billing.csv",data,"text/csv")})
     assert response.status_code == 401
 
 
 def test_pricing_import_requires_auth():
-    csv = b"region,instance_type,vcpu,memory_gb,compute_hourly_cost,storage_gb_month_cost,currency,pricing_date\\nus-east-1,tiny,2,8,0.1,0.1,USD,2026-10-01\\n"
+    csv = b"region,instance_type,vcpu,memory_gb,compute_hourly_cost,storage_gb_month_cost,currency,pricing_date\nus-east-1,tiny,2,8,0.1,0.1,USD,2026-10-01\n"
     response = client.post("/api/imports/pricing", data={"provider":"aws"},
         files={"file":("pricing.csv",csv,"text/csv")})
     assert response.status_code == 401
@@ -68,9 +68,9 @@ def test_pdf_report_requires_auth():
 
 
 def test_metrics_preview_counts_exact_duplicate_rows():
-    csv = (b"resource_id,observed_at,cpu_utilization_pct,memory_utilization_pct,active_hours,observed_hours\\n"
-           b"vm-1,2026-10-01T00:00:00Z,10,20,1,1\\n"
-           b"vm-1,2026-10-01T00:00:00Z,10,20,1,1\\n")
+    csv = (b"resource_id,observed_at,cpu_utilization_pct,memory_utilization_pct,active_hours,observed_hours\n"
+           b"vm-1,2026-10-01T00:00:00Z,10,20,1,1\n"
+           b"vm-1,2026-10-01T00:00:00Z,10,20,1,1\n")
     response = client.post("/api/uploads/metrics/preview", data={"provider":"aws"},
         files={"file":("metrics.csv",csv,"text/csv")})
     assert response.status_code == 200
