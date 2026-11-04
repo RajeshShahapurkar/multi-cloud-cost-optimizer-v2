@@ -4,6 +4,7 @@ from app.parsers.aws import parse_aws_billing
 from app.parsers.azure import parse_azure_billing
 from app.parsers.gcp import parse_gcp_billing
 from app.parsers.metrics import parse_metrics
+from app.parsers.pricing import parse_pricing
 
 router = APIRouter(tags=["CSV uploads"])
 PARSERS = {"aws":parse_aws_billing,"azure":parse_azure_billing,"gcp":parse_gcp_billing}
@@ -34,7 +35,7 @@ async def billing_preview(provider: str = Form(...), file: UploadFile = File(...
     return {"provider":provider,"filename":file.filename,"total_rows":len(records)+len(errors),
       "valid_rows":len(unique),"duplicate_rows":duplicates,"invalid_rows":len(errors),
       "total_cost_by_currency":totals,"records":unique[:100],"errors":errors[:100],
-      "warning":"Preview only; persistence and authenticated import are scheduled for the next milestone."}
+      "warning":"Preview only; confirm the import from your signed-in dashboard to persist these records."}
 
 @router.post("/uploads/metrics/preview")
 async def metrics_preview(provider: str = Form(...), file: UploadFile = File(...)):
@@ -45,3 +46,34 @@ async def metrics_preview(provider: str = Form(...), file: UploadFile = File(...
     except Exception as exc: raise HTTPException(422, f"Could not parse metrics CSV: {exc}") from exc
     return {"provider":provider,"total_rows":len(rows)+len(errors),"valid_rows":len(rows),
             "invalid_rows":len(errors),"records":rows[:100],"errors":errors[:100]}
+
+
+@router.post("/uploads/pricing/preview")
+async def pricing_preview(provider: str = Form(...), file: UploadFile = File(...)):
+    provider = provider.lower()
+    if provider not in PARSERS:
+        raise HTTPException(422, "Provider must be aws, azure or gcp")
+    content = await read_csv(file)
+    try:
+        rows, errors = parse_pricing(content, provider)
+    except Exception as exc:
+        raise HTTPException(422, f"Could not parse pricing CSV: {exc}") from exc
+    seen, unique, duplicates = set(), [], 0
+    for row in rows:
+        fingerprint = row["source_row_hash"]
+        if fingerprint in seen:
+            duplicates += 1
+        else:
+            seen.add(fingerprint)
+            unique.append(row)
+    return {
+        "provider": provider,
+        "filename": file.filename,
+        "total_rows": len(rows) + len(errors),
+        "valid_rows": len(unique),
+        "duplicate_rows": duplicates,
+        "invalid_rows": len(errors),
+        "records": unique[:100],
+        "errors": errors[:100],
+        "warning": "Rates are user-provided estimates, not live provider quotations."
+    }
