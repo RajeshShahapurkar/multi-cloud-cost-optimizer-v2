@@ -107,10 +107,10 @@ async def estimate_compute_savings(db: SupabaseUserClient, provider: str, region
     }
 
 async def persist_metrics_import(db: SupabaseUserClient, user_id: str, provider: str, filename: str,
-                                 metrics: list[dict], errors: list[dict]):
+                                 metrics: list[dict], errors: list[dict], duplicates: int=0):
     profile = await get_or_create_profile(db, user_id, provider)
     batch = await create_import_batch(db, user_id, profile["id"], "metrics", filename,
-                                      len(metrics)+len(errors), len(metrics), len(errors), 0)
+                                      len(metrics)+len(errors)+duplicates, len(metrics), len(errors), duplicates)
     db_rows = [{
         "user_id":user_id,"import_batch_id":batch["id"],"provider":provider,
         "resource_id":row["resource_id"],"observed_at":row["observed_at"],
