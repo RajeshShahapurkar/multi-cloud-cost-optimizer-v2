@@ -1,0 +1,3 @@
+service.description,usage_start_time,cost,currency,resource.name,location.region,sku_description
+Compute Engine,2026-10-01T00:00:00Z,15.25,USD,gcp-vm-api,us-central1,N2 Instance
+Cloud Storage,2026-10-01T00:00:00Z,1.80,USD,gcp-bucket-data,us-central1,Standard Storage
