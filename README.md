@@ -92,15 +92,15 @@ Provider export parsers accept common AWS CUR, Azure Cost Management and GCP Clo
 
 ### Resource metrics
 
-`provider,resource_id,observed_at,cpu_utilization_pct,memory_utilization_pct,active_hours,observed_hours`
+`provider,resource_id,observed_at,cpu_utilization_pct,memory_utilization_pct,active_hours,observed_hours,region,provisioned_vcpu,provisioned_memory_gb,pricing_currency`
 
-Billing records alone cannot prove CPU or memory utilization. Upload metrics separately to enable utilization-based findings. The current rule engine is advisory and does not make changes to cloud resources.
+Billing records alone cannot prove CPU or memory utilization. Upload metrics separately to enable utilization-based findings. Add provisioned_vcpu and provisioned_memory_gb to get a concrete right-sizing candidate; region and pricing_currency enable price-backed compute savings when matching current and target rates exist in your catalogue. These suggestions are advisory, require workload/peak-period validation and do not make changes to cloud resources.
 
 ### Pricing catalogue
 
 `region,instance_type,vcpu,memory_gb,compute_hourly_cost,storage_gb_month_cost,currency,pricing_date`
 
-Rates must be supplied by the user. The comparison engine matches requested minimum vCPU/RAM and exact region/currency, then estimates compute plus storage for the requested hours. Estimates do not include network egress, taxes, support, licensing, discount programs or workload-specific charges; they are not live quotations.
+Rates must be supplied by the user. The comparison engine accepts separate region codes for AWS, Azure and GCP, matches requested minimum vCPU/RAM and exact provider-specific region/currency, then estimates compute plus storage for the requested hours. Estimates do not include network egress, taxes, support, licensing, discount programs or workload-specific charges; they are not live quotations.
 
 ## API endpoints
 
