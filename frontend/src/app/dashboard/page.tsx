@@ -39,7 +39,9 @@ export default function DashboardPage(){
   const [file,setFile]=useState<File|null>(null);
   const [notice,setNotice]=useState("");
   const [error,setError]=useState("");
-  const [compareRegion,setCompareRegion]=useState("us-east-1");
+  const [awsRegion,setAwsRegion]=useState("us-east-1");
+  const [azureRegion,setAzureRegion]=useState("eastus");
+  const [gcpRegion,setGcpRegion]=useState("us-central1");
   const [compareVcpu,setCompareVcpu]=useState("2");
   const [compareMemory,setCompareMemory]=useState("8");
   const [compareStorage,setCompareStorage]=useState("100");
@@ -125,7 +127,7 @@ export default function DashboardPage(){
         method:"POST",
         headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token},
         body:JSON.stringify({
-          region:compareRegion,vcpu:Number(compareVcpu),memory_gb:Number(compareMemory),
+          regions:{aws:awsRegion,azure:azureRegion,gcp:gcpRegion},vcpu:Number(compareVcpu),memory_gb:Number(compareMemory),
           storage_gb:Number(compareStorage),hours_per_month:Number(compareHours),currency:compareCurrency.toUpperCase()
         })
       });
@@ -220,9 +222,11 @@ export default function DashboardPage(){
       </section>
 
       <section className="mt-7 rounded-2xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6">
-        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h2 className="font-semibold">Cross-cloud configuration comparison</h2><p className="mt-1 text-sm text-slate-400">Use your own uploaded per-provider pricing catalogue to compare equivalent VM requirements.</p></div><GitCompare className="text-cyan-300"/></div>
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h2 className="font-semibold">Cross-cloud configuration comparison</h2><p className="mt-1 text-sm text-slate-400">Enter each provider's region code separately, then compare equivalent VM requirements using your uploaded pricing.</p></div><GitCompare className="text-cyan-300"/></div>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <Field label="Region" value={compareRegion} onChange={setCompareRegion}/>
+          <Field label="AWS region" value={awsRegion} onChange={setAwsRegion}/>
+          <Field label="Azure region" value={azureRegion} onChange={setAzureRegion}/>
+          <Field label="GCP region" value={gcpRegion} onChange={setGcpRegion}/>
           <Field label="vCPU" value={compareVcpu} onChange={setCompareVcpu} type="number"/>
           <Field label="Memory (GB)" value={compareMemory} onChange={setCompareMemory} type="number"/>
           <Field label="Storage (GB)" value={compareStorage} onChange={setCompareStorage} type="number"/>
