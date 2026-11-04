@@ -57,7 +57,7 @@ def test_pricing_import_requires_auth():
 
 def test_comparison_requires_auth():
     response = client.post("/api/comparison/estimate", json={
-        "region":"us-east-1","vcpu":2,"memory_gb":8,
+        "regions":{"aws":"us-east-1","azure":"eastus","gcp":"us-central1"},"vcpu":2,"memory_gb":8,
         "storage_gb":100,"currency":"USD"
     })
     assert response.status_code == 401
