@@ -27,7 +27,11 @@ def parse_metrics(content: bytes, provider: str):
             col = mapping[key]
             value = parse_decimal(source[col]) if col else None
             item[key] = float(value) if value is not None else None
-        invalid = any(item[k] is not None and not 0 <= item[k] <= 100 for k in ("cpu_utilization_pct","memory_utilization_pct"))
-        if invalid: errors.append({"row":int(index)+2,"error":"Utilization percentage must be between 0 and 100"})
+        invalid_pct = any(item[k] is not None and not 0 <= item[k] <= 100 for k in ("cpu_utilization_pct","memory_utilization_pct"))
+        invalid_hours = (item["active_hours"] is not None and item["active_hours"] < 0) or (item["observed_hours"] is not None and item["observed_hours"] <= 0)
+        if item["active_hours"] is not None and item["observed_hours"] is not None and item["active_hours"] > item["observed_hours"]:
+            invalid_hours = True
+        if invalid_pct: errors.append({"row":int(index)+2,"error":"Utilization percentage must be between 0 and 100"})
+        elif invalid_hours: errors.append({"row":int(index)+2,"error":"Hours must be non-negative and active_hours cannot exceed observed_hours"})
         else: rows.append(item)
     return rows, errors
