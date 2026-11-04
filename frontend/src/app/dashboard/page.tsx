@@ -37,6 +37,7 @@ export default function DashboardPage(){
   const [provider,setProvider]=useState<Provider>("aws");
   const [kind,setKind]=useState<"billing"|"metrics"|"pricing">("billing");
   const [file,setFile]=useState<File|null>(null);
+  const [preview,setPreview]=useState<any>(null);
   const [notice,setNotice]=useState("");
   const [error,setError]=useState("");
   const [awsRegion,setAwsRegion]=useState("us-east-1");
@@ -87,15 +88,24 @@ export default function DashboardPage(){
     setBusy(true);setError("");setNotice("");
     const form=new FormData();form.append("provider",provider);form.append("file",file);
     try{
-      const endpoint=kind==="billing"?"imports/billing":kind==="metrics"?"imports/metrics":"imports/pricing";
-      const response=await fetch(API+"/api/"+endpoint,{method:"POST",headers:{Authorization:"Bearer "+session.access_token},body:form});
+      const endpoint = preview
+        ? (kind==="billing"?"imports/billing":kind==="metrics"?"imports/metrics":"imports/pricing")
+        : (kind==="billing"?"uploads/billing/preview":kind==="metrics"?"uploads/metrics/preview":"uploads/pricing/preview");
+      const headers:Record<string,string> = preview ? {Authorization:"Bearer "+session.access_token} : {};
+      const response=await fetch(API+"/api/"+endpoint,{method:"POST",headers,body:form});
       const payload=await response.json();
-      if(!response.ok)throw new Error(payload.detail??"Import failed.");
+      if(!response.ok)throw new Error(payload.detail??(preview?"Import failed.":"CSV validation failed."));
+      if(!preview){
+        setPreview(payload);
+        setNotice("Validation complete. Review the accepted and rejected rows before confirming the import.");
+        return;
+      }
       setNotice(kind==="billing"
         ?"Imported "+payload.inserted_records+" billing rows for "+provider.toUpperCase()+"."
         :kind==="metrics"
           ?"Imported "+payload.inserted_metrics+" metrics rows and generated "+(payload.recommendations?.length??0)+" recommendations."
           :"Imported "+payload.inserted_prices+" user-provided pricing records for "+provider.toUpperCase()+".");
+      setPreview(null);
       setFile(null);
       const input=document.getElementById("csv-file") as HTMLInputElement|null;
       if(input)input.value="";
@@ -191,11 +201,25 @@ export default function DashboardPage(){
       <section className="mt-7 grid gap-5 lg:grid-cols-[1.15fr_.85fr]">
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6">
           <div className="flex items-center justify-between"><div><h2 className="text-lg font-semibold">Import cloud data</h2><p className="mt-1 text-sm text-slate-400">Files are parsed and saved to your private database.</p></div><UploadCloud className="h-6 w-6 text-cyan-300"/></div>
-          <div className="mt-5 grid grid-cols-3 gap-2">{providerOptions.map(p=><button key={p} onClick={()=>setProvider(p)} className={"rounded-xl border px-3 py-3 text-sm font-semibold "+(provider===p?"border-cyan-300 bg-cyan-300/10 text-cyan-200":"border-slate-700 text-slate-400 hover:bg-slate-800")}>{p==="gcp"?"Google Cloud":p.toUpperCase()}</button>)}</div>
-          <div className="mt-4 grid grid-cols-3 gap-2"><button onClick={()=>setKind("billing")} className={"rounded-xl border px-2 py-3 text-xs sm:text-sm "+(kind==="billing"?"border-blue-300 bg-blue-300/10 text-blue-200":"border-slate-700 text-slate-400")}><FileSpreadsheet className="mr-1 inline h-4 w-4"/>Billing</button><button onClick={()=>setKind("metrics")} className={"rounded-xl border px-2 py-3 text-xs sm:text-sm "+(kind==="metrics"?"border-blue-300 bg-blue-300/10 text-blue-200":"border-slate-700 text-slate-400")}><Gauge className="mr-1 inline h-4 w-4"/>Metrics</button><button onClick={()=>setKind("pricing")} className={"rounded-xl border px-2 py-3 text-xs sm:text-sm "+(kind==="pricing"?"border-blue-300 bg-blue-300/10 text-blue-200":"border-slate-700 text-slate-400")}><GitCompare className="mr-1 inline h-4 w-4"/>Pricing</button></div>
+          <div className="mt-5 grid grid-cols-3 gap-2">{providerOptions.map(p=><button key={p} onClick={()=>{setProvider(p);setPreview(null);}} className={"rounded-xl border px-3 py-3 text-sm font-semibold "+(provider===p?"border-cyan-300 bg-cyan-300/10 text-cyan-200":"border-slate-700 text-slate-400 hover:bg-slate-800")}>{p==="gcp"?"Google Cloud":p.toUpperCase()}</button>)}</div>
+          <div className="mt-4 grid grid-cols-3 gap-2"><button onClick={()=>{setKind("billing");setPreview(null);}} className={"rounded-xl border px-2 py-3 text-xs sm:text-sm "+(kind==="billing"?"border-blue-300 bg-blue-300/10 text-blue-200":"border-slate-700 text-slate-400")}><FileSpreadsheet className="mr-1 inline h-4 w-4"/>Billing</button><button onClick={()=>{setKind("metrics");setPreview(null);}} className={"rounded-xl border px-2 py-3 text-xs sm:text-sm "+(kind==="metrics"?"border-blue-300 bg-blue-300/10 text-blue-200":"border-slate-700 text-slate-400")}><Gauge className="mr-1 inline h-4 w-4"/>Metrics</button><button onClick={()=>{setKind("pricing");setPreview(null);}} className={"rounded-xl border px-2 py-3 text-xs sm:text-sm "+(kind==="pricing"?"border-blue-300 bg-blue-300/10 text-blue-200":"border-slate-700 text-slate-400")}><GitCompare className="mr-1 inline h-4 w-4"/>Pricing</button></div>
           <label htmlFor="csv-file" className="mt-4 flex cursor-pointer flex-col items-center rounded-xl border border-dashed border-slate-600 bg-slate-950/70 px-4 py-7 text-center hover:border-cyan-300/70"><UploadCloud className="h-7 w-7 text-cyan-300"/><span className="mt-2 text-sm font-medium">{file?file.name:"Choose a CSV file"}</span><span className="mt-1 text-xs text-slate-500">CSV only · 10 MB maximum · {kind==="pricing"?"user-provided rate catalogue":kind==="metrics"?"CPU, memory and activity metrics":"provider billing export"}</span></label>
-          <input id="csv-file" type="file" accept=".csv,text/csv" className="sr-only" onChange={e=>setFile(e.target.files?.[0]??null)}/>
-          <button disabled={!file||busy} onClick={upload} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 font-semibold text-slate-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50">{busy?<LoaderCircle className="h-4 w-4 animate-spin"/>:<ArrowUpFromLine className="h-4 w-4"/>}{busy?"Importing data…":"Import "+kind+" CSV"}</button>
+          <input id="csv-file" type="file" accept=".csv,text/csv" className="sr-only" onChange={e=>{setFile(e.target.files?.[0]??null);setPreview(null);}}/>
+          {preview&&<div className="mt-4 rounded-xl border border-emerald-400/25 bg-emerald-400/5 p-4">
+            <p className="font-semibold text-emerald-200">Validation preview · {preview.provider?.toUpperCase()}</p>
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <PreviewCount label="Total rows" value={preview.total_rows}/>
+              <PreviewCount label="Valid" value={preview.valid_rows}/>
+              <PreviewCount label="Duplicates" value={preview.duplicate_rows??0}/>
+              <PreviewCount label="Invalid" value={preview.invalid_rows}/>
+            </div>
+            {preview.total_cost_by_currency&&<p className="mt-3 text-xs text-slate-300">Cost totals: {Object.entries(preview.total_cost_by_currency).map(([currency,amount])=>currency+" "+amount).join(" · ")}</p>}
+            {preview.warning&&<p className="mt-2 text-xs text-amber-200">{preview.warning}</p>}
+            {preview.errors?.length>0&&<div className="mt-3 space-y-1"><p className="text-xs font-semibold text-rose-200">Rejected rows (first 5)</p>{preview.errors.slice(0,5).map((item:any,index:number)=><p key={index} className="text-xs text-rose-200">Row {item.row}: {item.error}</p>)}</div>}
+            <p className="mt-3 text-xs text-slate-400">Confirm to save {preview.valid_rows} valid rows to your private workspace.</p>
+            <button onClick={()=>setPreview(null)} className="mt-3 text-xs text-slate-400 underline">Discard preview</button>
+          </div>}
+          <button disabled={!file||busy||Boolean(preview&&preview.valid_rows===0)} onClick={upload} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 font-semibold text-slate-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50">{busy?<LoaderCircle className="h-4 w-4 animate-spin"/>:preview?<Check className="h-4 w-4"/>:<ArrowUpFromLine className="h-4 w-4"/>}{busy?"Processing…":preview?"Confirm and import "+kind:"Validate and preview CSV"}</button>
           <p className="mt-3 text-xs leading-5 text-slate-500">Billing files provide actual charges. CPU and memory-based recommendations require a separate metrics CSV; missing metrics are never assumed to mean idle resources.</p>
         </div>
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6">
@@ -253,4 +277,5 @@ export default function DashboardPage(){
 
 function Stat({icon,label,value}:{icon:React.ReactNode;label:string;value:number}){return <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5"><div className="flex items-center justify-between"><span className="text-sm text-slate-400">{label}</span><span className="rounded-lg bg-cyan-300/10 p-2 text-cyan-300">{icon}</span></div><p className="mt-4 text-3xl font-bold tabular-nums">{value.toLocaleString()}</p></div>}
 function Empty({text}:{text:string}){return <div className="flex min-h-32 items-center justify-center px-3 text-center text-sm text-slate-500">{text}</div>}
+function PreviewCount({label,value}:{label:string;value:number}){return <div className="rounded-lg bg-slate-950 p-2"><p className="text-[10px] text-slate-500">{label}</p><p className="mt-1 text-lg font-semibold tabular-nums">{value}</p></div>}
 function Field({label,value,onChange,type="text"}:{label:string;value:string;onChange:(value:string)=>void;type?:string}){return <label className="block text-xs text-slate-400">{label}<input type={type} value={value} onChange={event=>onChange(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 outline-none focus:border-cyan-300"/></label>}
