@@ -3,7 +3,7 @@ from app.parsers.aws import parse_aws_billing
 from app.parsers.azure import parse_azure_billing
 from app.parsers.gcp import parse_gcp_billing
 from app.parsers.metrics import parse_metrics
-from app.services.optimization import detect_underutilized, detect_cost_anomalies, estimate_savings
+from app.services.optimization import detect_idle, detect_underutilized, detect_cost_anomalies, estimate_savings
 
 ROOT = Path(__file__).resolve().parents[2]
 SAMPLES = ROOT / "sample-data"
@@ -43,3 +43,22 @@ def test_cost_anomaly_requires_history():
 def test_savings_estimate_is_non_negative():
     result = estimate_savings(120, 75)
     assert result["estimated_monthly_savings"] == 45
+
+
+def test_idle_detection_requires_activity_and_observation_coverage():
+    rows = [
+        {"provider":"gcp","resource_id":"vm-idle-1","observed_at":f"2026-10-01T0{i}:00:00Z",
+         "cpu_utilization_pct":0,"memory_utilization_pct":2,"active_hours":0,"observed_hours":1}
+        for i in (1,2,3)
+    ]
+    findings = detect_idle(rows)
+    assert len(findings) == 1
+    assert findings[0]["category"] == "idle_candidate"
+
+def test_no_idle_finding_without_activity_metric():
+    rows = [
+        {"provider":"azure","resource_id":"vm-unknown","observed_at":f"2026-10-01T0{i}:00:00Z",
+         "cpu_utilization_pct":0,"memory_utilization_pct":1,"active_hours":None,"observed_hours":1}
+        for i in (1,2,3)
+    ]
+    assert detect_idle(rows) == []
