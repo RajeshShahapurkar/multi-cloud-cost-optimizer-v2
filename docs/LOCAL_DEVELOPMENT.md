@@ -37,7 +37,9 @@ Frontend: http://localhost:3000
 
 The frontend environment file contains `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `NEXT_PUBLIC_API_URL`. These public values are used by the browser Supabase client and API request target. Never put a Supabase secret/service-role key in a `NEXT_PUBLIC_*` variable.
 
-## 3. Create an account
+## 3. Configure Supabase Auth redirects and create an account
+
+In the Supabase Dashboard for `multi-cloud-cost-optimizer-v2`, open **Authentication → URL Configuration**. Set the local Site URL to `http://localhost:3000` and add `http://localhost:3000/auth/callback` to the allowed Redirect URLs. Add the matching production callback URL after deployment.
 
 Open http://localhost:3000. Choose **Create account**, register with an email and password, and verify your email if the Supabase Auth project requires email confirmation. Then sign in.
 
