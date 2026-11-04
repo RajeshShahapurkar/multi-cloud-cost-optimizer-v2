@@ -23,3 +23,38 @@ def test_pricing_rejects_negative_rates():
     rows,errors=parse_pricing(csv,"aws")
     assert rows==[]
     assert errors[0]["error"].startswith("Compute and storage rates")
+
+
+def test_right_sizing_compute_savings_uses_uploaded_current_and_target_rates():
+    import asyncio
+    from app.services.import_service import estimate_compute_savings
+
+    class FakeDb:
+        async def request(self, method, endpoint, params=None):
+            if params["vcpu"] == "eq.4":
+                return [{"compute_hourly_cost":"0.16","storage_gb_month_cost":"0.10",
+                         "currency":"USD","pricing_date":"2026-10-01"}]
+            if params["vcpu"] == "eq.2":
+                return [{"compute_hourly_cost":"0.08","storage_gb_month_cost":"0.10",
+                         "currency":"USD","pricing_date":"2026-10-01"}]
+            return []
+
+    result = asyncio.run(estimate_compute_savings(
+        FakeDb(),"aws","us-east-1","USD",4,16.0,2,8.0
+    ))
+    assert result["amount"] == 58.4
+    assert result["currency"] == "USD"
+    assert result["assumptions"]["excludes_storage_network_transfer_taxes_and_discounts"] is True
+
+def test_right_sizing_savings_requires_both_catalogue_rates():
+    import asyncio
+    from app.services.import_service import estimate_compute_savings
+
+    class EmptyDb:
+        async def request(self, method, endpoint, params=None):
+            return []
+
+    result = asyncio.run(estimate_compute_savings(
+        EmptyDb(),"aws","us-east-1","USD",4,16.0,2,8.0
+    ))
+    assert result is None
