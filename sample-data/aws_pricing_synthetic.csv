@@ -1,2 +1,3 @@
 region,instance_type,vcpu,memory_gb,compute_hourly_cost,storage_gb_month_cost,currency,pricing_date
 us-east-1,synthetic-small,2,8,0.0800,0.1000,USD,2026-10-01
+us-east-1,synthetic-medium,4,16,0.1600,0.1000,USD,2026-10-01
