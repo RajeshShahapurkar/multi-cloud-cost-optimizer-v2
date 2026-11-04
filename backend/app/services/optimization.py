@@ -36,11 +36,34 @@ def detect_underutilized(metric_rows, cpu_threshold=20.0, memory_threshold=25.0,
         if len(rows)<minimum_observations or not cpu: continue
         avg_cpu, avg_memory = mean(cpu), mean(memory) if memory else None
         if avg_cpu<cpu_threshold and (avg_memory is None or avg_memory<memory_threshold):
-            findings.append({"provider":provider,"resource_id":resource_id,"category":"underutilized",
-              "severity":"medium","evidence":{"observations":len(rows),"average_cpu_pct":round(avg_cpu,2),
-              "average_memory_pct":round(avg_memory,2) if avg_memory is not None else None},
-              "recommendation":"Review a smaller instance or lower-capacity configuration after workload validation.",
-              "limitations":"Advisory finding based only on uploaded utilization metrics; not a live cloud observation."})
+            provisioned_vcpu = [r["provisioned_vcpu"] for r in rows if r.get("provisioned_vcpu") is not None]
+            provisioned_memory = [r["provisioned_memory_gb"] for r in rows if r.get("provisioned_memory_gb") is not None]
+            regions = [r["region"] for r in rows if r.get("region")]
+            current_vcpu = int(round(mean(provisioned_vcpu))) if provisioned_vcpu else None
+            current_memory = round(mean(provisioned_memory), 2) if provisioned_memory else None
+            right_sizing = current_vcpu is not None and current_memory is not None
+            target_vcpu = max(1, current_vcpu // 2) if right_sizing else None
+            target_memory = max(1.0, round(current_memory / 2, 2)) if right_sizing else None
+            evidence = {"observations":len(rows),"average_cpu_pct":round(avg_cpu,2),
+              "average_memory_pct":round(avg_memory,2) if avg_memory is not None else None}
+            if right_sizing:
+                evidence["current_configuration"] = {"vcpu":current_vcpu,"memory_gb":current_memory}
+                evidence["candidate_configuration"] = {"vcpu":target_vcpu,"memory_gb":target_memory}
+            if regions:
+                evidence["region"] = regions[0]
+            findings.append({"provider":provider,"resource_id":resource_id,
+              "category":"right_sizing_candidate" if right_sizing else "underutilized",
+              "severity":"medium","evidence":evidence,
+              "recommendation":(
+                f"Review a candidate reduction from {current_vcpu} vCPU / {current_memory} GB RAM "
+                f"to {target_vcpu} vCPU / {target_memory} GB RAM after workload and peak-period validation."
+                if right_sizing else
+                "Review a smaller instance or lower-capacity configuration after workload validation."
+              ),
+              "region":regions[0] if regions else None,
+              "provisioned_vcpu":current_vcpu,"provisioned_memory_gb":current_memory,
+              "target_vcpu":target_vcpu,"target_memory_gb":target_memory,
+              "limitations":"Advisory finding based only on uploaded utilization metrics; suggested capacity is a starting point, not a guarantee of workload fit."})
     return findings
 
 def detect_cost_anomalies(period_costs, threshold_pct=30.0, minimum_baseline=3):
