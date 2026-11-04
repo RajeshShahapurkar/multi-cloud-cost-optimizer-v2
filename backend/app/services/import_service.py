@@ -100,6 +100,28 @@ async def persist_metrics_import(db: SupabaseUserClient, user_id: str, provider:
     return {"import_batch":batch,"inserted_metrics":len(db_rows),
             "recommendations":findings,"errors":errors[:100]}
 
+
+async def persist_pricing_import(db: SupabaseUserClient, user_id: str, provider: str, filename: str,
+                                 prices: list[dict], errors: list[dict]):
+    profile = await get_or_create_profile(db, user_id, provider)
+    batch = await create_import_batch(db, user_id, profile["id"], "pricing", filename,
+                                      len(prices)+len(errors), len(prices), len(errors), 0)
+    rows = [{
+        "user_id":user_id,"import_batch_id":batch["id"],"provider":provider,
+        "region":row["region"],"instance_type":row["instance_type"],
+        "vcpu":row["vcpu"],"memory_gb":row["memory_gb"],
+        "compute_hourly_cost":row["compute_hourly_cost"],
+        "storage_gb_month_cost":row["storage_gb_month_cost"],
+        "currency":row["currency"],"pricing_date":row["pricing_date"],
+        "source_row_hash":row["source_row_hash"],
+    } for row in prices]
+    try:
+        await insert_in_chunks(db, "/rest/v1/pricing_catalogue", rows)
+    except Exception:
+        await cleanup_batch(db, batch["id"])
+        raise
+    return {"import_batch":batch,"inserted_prices":len(rows),"errors":errors[:100]}
+
 async def load_dashboard_data(db: SupabaseUserClient):
     billing = await db.request("GET","/rest/v1/billing_records",
         params={"select":"provider,service_name,region,resource_id,usage_start,cost,currency",
