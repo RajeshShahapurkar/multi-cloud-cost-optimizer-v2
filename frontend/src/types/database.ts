@@ -260,6 +260,65 @@ export type Database = {
           },
         ]
       }
+      pricing_catalogue: {
+        Row: {
+          compute_hourly_cost: number
+          created_at: string
+          currency: string
+          id: string
+          import_batch_id: string
+          instance_type: string
+          memory_gb: number
+          pricing_date: string
+          provider: string
+          region: string
+          source_row_hash: string
+          storage_gb_month_cost: number
+          user_id: string
+          vcpu: number
+        }
+        Insert: {
+          compute_hourly_cost: number
+          created_at?: string
+          currency: string
+          id?: string
+          import_batch_id: string
+          instance_type: string
+          memory_gb: number
+          pricing_date: string
+          provider: string
+          region: string
+          source_row_hash: string
+          storage_gb_month_cost: number
+          user_id: string
+          vcpu: number
+        }
+        Update: {
+          compute_hourly_cost?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          import_batch_id?: string
+          instance_type?: string
+          memory_gb?: number
+          pricing_date?: string
+          provider?: string
+          region?: string
+          source_row_hash?: string
+          storage_gb_month_cost?: number
+          user_id?: string
+          vcpu?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_catalogue_import_batch_id_user_id_fkey"
+            columns: ["import_batch_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id", "user_id"]
+          },
+        ]
+      }
       resource_metrics: {
         Row: {
           active_hours: number | null
