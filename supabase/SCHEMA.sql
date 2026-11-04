@@ -98,6 +98,18 @@ create index if not exists idx_billing_user_resource on public.billing_records(u
 create index if not exists idx_metrics_user_resource_time on public.resource_metrics(user_id, provider, resource_id, observed_at);
 create index if not exists idx_recommendations_user_status on public.optimization_recommendations(user_id, status);
 
+-- Expose these tables to the Supabase Data API for signed-in users.
+-- RLS remains the row-level authorization boundary.
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on table
+  public.cloud_profiles,
+  public.import_batches,
+  public.billing_records,
+  public.resource_metrics,
+  public.optimization_recommendations,
+  public.cost_anomalies
+to authenticated;
+
 alter table public.cloud_profiles enable row level security;
 alter table public.import_batches enable row level security;
 alter table public.billing_records enable row level security;
