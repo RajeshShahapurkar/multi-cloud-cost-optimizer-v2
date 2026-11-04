@@ -26,9 +26,9 @@ def test_reject_unknown_provider():
 
 
 def test_azure_billing_analysis_groups_costs_by_service():
-    csv = (b"ConsumedService,Date,Cost,CurrencyCode,ResourceId,ResourceLocation\\n"
-           b"Virtual Machines,2026-10-01,17.50,USD,vm-a,eastus\\n"
-           b"Storage,2026-10-01,2.50,USD,disk-a,eastus\\n")
+    csv = (b"ConsumedService,Date,Cost,CurrencyCode,ResourceId,ResourceLocation\n"
+           b"Virtual Machines,2026-10-01,17.50,USD,vm-a,eastus\n"
+           b"Storage,2026-10-01,2.50,USD,disk-a,eastus\n")
     response = client.post("/api/analysis/billing", data={"provider":"azure"},
         files={"file":("azure.csv",csv,"text/csv")})
     assert response.status_code == 200
