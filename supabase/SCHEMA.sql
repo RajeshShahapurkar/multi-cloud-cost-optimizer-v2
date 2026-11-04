@@ -17,7 +17,7 @@ create table if not exists public.import_batches (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   cloud_profile_id uuid not null,
-  data_type text not null check (data_type in ('billing','metrics')),
+  data_type text not null check (data_type in ('billing','metrics','pricing')),
   original_filename text not null,
   status text not null default 'validated' check (status in ('validated','imported','failed')),
   total_rows integer not null default 0,
@@ -70,6 +70,27 @@ create table if not exists public.resource_metrics (
     references public.import_batches(id, user_id) on delete cascade
 );
 
+
+create table if not exists public.pricing_catalogue (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  import_batch_id uuid not null,
+  provider text not null check (provider in ('aws','azure','gcp')),
+  region text not null,
+  instance_type text not null,
+  vcpu integer not null check (vcpu > 0),
+  memory_gb numeric(12,3) not null check (memory_gb > 0),
+  compute_hourly_cost numeric(20,8) not null check (compute_hourly_cost >= 0),
+  storage_gb_month_cost numeric(20,8) not null check (storage_gb_month_cost >= 0),
+  currency char(3) not null,
+  pricing_date date not null,
+  source_row_hash text not null,
+  created_at timestamptz not null default now(),
+  unique (import_batch_id, source_row_hash),
+  foreign key (import_batch_id, user_id)
+    references public.import_batches(id, user_id) on delete cascade
+);
+
 create table if not exists public.optimization_recommendations (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -114,6 +135,8 @@ create index if not exists idx_billing_records_import_batch_user on public.billi
 create index if not exists idx_resource_metrics_import_batch_user on public.resource_metrics(import_batch_id, user_id);
 create index if not exists idx_cost_anomalies_user on public.cost_anomalies(user_id);
 create index if not exists idx_recommendations_import_batch_user on public.optimization_recommendations(import_batch_id, user_id);
+create index if not exists idx_pricing_user_provider_region on public.pricing_catalogue(user_id, provider, region, currency);
+create index if not exists idx_pricing_import_batch_user on public.pricing_catalogue(import_batch_id, user_id);
 
 -- Expose these tables to the Supabase Data API for signed-in users.
 -- RLS remains the row-level authorization boundary.
@@ -124,7 +147,8 @@ grant select, insert, update, delete on table
   public.billing_records,
   public.resource_metrics,
   public.optimization_recommendations,
-  public.cost_anomalies
+  public.cost_anomalies,
+  public.pricing_catalogue
 to authenticated;
 
 alter table public.cloud_profiles enable row level security;
@@ -133,6 +157,7 @@ alter table public.billing_records enable row level security;
 alter table public.resource_metrics enable row level security;
 alter table public.optimization_recommendations enable row level security;
 alter table public.cost_anomalies enable row level security;
+alter table public.pricing_catalogue enable row level security;
 
 create policy "users manage their cloud profiles" on public.cloud_profiles
   for all to authenticated using ((select auth.uid()) = user_id)
@@ -150,5 +175,8 @@ create policy "users manage their recommendations" on public.optimization_recomm
   for all to authenticated using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
 create policy "users manage their cost anomalies" on public.cost_anomalies
+  for all to authenticated using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+create policy "users manage their pricing catalogue" on public.pricing_catalogue
   for all to authenticated using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
