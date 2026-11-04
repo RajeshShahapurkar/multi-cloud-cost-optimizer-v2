@@ -47,3 +47,21 @@ def test_billing_import_requires_bearer_token():
     response = client.post("/api/imports/billing", data={"provider":"aws"},
         files={"file":("billing.csv",data,"text/csv")})
     assert response.status_code == 401
+
+
+def test_pricing_import_requires_auth():
+    csv = b"region,instance_type,vcpu,memory_gb,compute_hourly_cost,storage_gb_month_cost,currency,pricing_date\\nus-east-1,tiny,2,8,0.1,0.1,USD,2026-10-01\\n"
+    response = client.post("/api/imports/pricing", data={"provider":"aws"},
+        files={"file":("pricing.csv",csv,"text/csv")})
+    assert response.status_code == 401
+
+def test_comparison_requires_auth():
+    response = client.post("/api/comparison/estimate", json={
+        "region":"us-east-1","vcpu":2,"memory_gb":8,
+        "storage_gb":100,"currency":"USD"
+    })
+    assert response.status_code == 401
+
+def test_pdf_report_requires_auth():
+    response = client.get("/api/reports/summary.pdf")
+    assert response.status_code == 401
