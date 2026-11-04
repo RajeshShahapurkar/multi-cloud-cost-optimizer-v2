@@ -164,10 +164,10 @@ async def persist_metrics_import(db: SupabaseUserClient, user_id: str, provider:
 
 
 async def persist_pricing_import(db: SupabaseUserClient, user_id: str, provider: str, filename: str,
-                                 prices: list[dict], errors: list[dict]):
+                                 prices: list[dict], errors: list[dict], duplicates: int=0):
     profile = await get_or_create_profile(db, user_id, provider)
     batch = await create_import_batch(db, user_id, profile["id"], "pricing", filename,
-                                      len(prices)+len(errors), len(prices), len(errors), 0)
+                                      len(prices)+len(errors)+duplicates, len(prices), len(errors), duplicates)
     rows = [{
         "user_id":user_id,"import_batch_id":batch["id"],"provider":provider,
         "region":row["region"],"instance_type":row["instance_type"],
