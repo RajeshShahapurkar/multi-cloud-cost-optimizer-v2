@@ -1,10 +1,43 @@
 provider,region_group,provider_region,location,instance_type,vcpu,memory_gb,architecture,cpu_platform,linux_on_demand_monthly_usd,price_checked_on,price_source_url,price_basis,boot_disk_gb
 aws,India,ap-south-1,Mumbai,m6g.large,2,8,arm64,AWS Graviton,37.85,2026-11-04,https://vmprices.com/sizes/2-vcpu-8-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+aws,India,ap-south-1,Mumbai,m6a.large,2,8,x86_64,AMD,41.46,2026-11-04,https://vmprices.com/sizes/2-vcpu-8-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+aws,India,ap-south-1,Mumbai,m5a.large,2,8,x86_64,AMD,41.79,2026-11-04,https://vmprices.com/sizes/2-vcpu-8-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+aws,India,ap-south-1,Mumbai,m7g.large,2,8,arm64,AWS Graviton,43.47,2026-11-04,https://vmprices.com/sizes/2-vcpu-8-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+aws,India,ap-south-1,Mumbai,m6gd.large,2,8,arm64,AWS Graviton,45.00,2026-11-04,https://vmprices.com/sizes/2-vcpu-8-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
 azure,India,centralindia,Pune,D2ps v6,2,8,arm64,Microsoft Cobalt,35.05,2026-11-04,https://vmprices.com/sizes/2-vcpu-8-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+azure,India,centralindia,Pune,D2ps v5,2,8,arm64,Ampere,38.26,2026-11-04,https://vmprices.com/sizes/2-vcpu-8-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+azure,India,centralindia,Pune,D2as v5,2,8,x86_64,AMD,41.91,2026-11-04,https://vmprices.com/sizes/2-vcpu-8-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+azure,India,centralindia,Pune,DC2as v5,2,8,x86_64,AMD,41.91,2026-11-04,https://vmprices.com/sizes/2-vcpu-8-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+azure,India,centralindia,Pune,D2as v6,2,8,x86_64,AMD,44.10,2026-11-04,https://vmprices.com/sizes/2-vcpu-8-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
 gcp,India,asia-south1,Mumbai,n2d-standard-2,2,8,x86_64,AMD,41.91,2026-11-04,https://vmprices.com/sizes/2-vcpu-8-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+gcp,India,asia-south1,Mumbai,t2d-standard-2,2,8,x86_64,AMD,41.91,2026-11-04,https://vmprices.com/sizes/2-vcpu-8-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+gcp,India,asia-south1,Mumbai,c2d-standard-2,2,8,x86_64,AMD,44.95,2026-11-04,https://vmprices.com/sizes/2-vcpu-8-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+gcp,India,asia-south1,Mumbai,n4d-standard-2,2,8,x86_64,AMD,48.78,2026-11-04,https://vmprices.com/sizes/2-vcpu-8-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
 aws,India,ap-south-1,Mumbai,m6g.xlarge,4,16,arm64,AWS Graviton,74.79,2026-11-04,https://vmprices.com/sizes/4-vcpu-16-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+aws,India,ap-south-1,Mumbai,m5a.xlarge,4,16,x86_64,AMD,81.94,2026-11-04,https://vmprices.com/sizes/4-vcpu-16-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+aws,India,ap-south-1,Mumbai,m6a.xlarge,4,16,x86_64,AMD,82.02,2026-11-04,https://vmprices.com/sizes/4-vcpu-16-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+aws,India,ap-south-1,Mumbai,m7g.xlarge,4,16,arm64,AWS Graviton,86.03,2026-11-04,https://vmprices.com/sizes/4-vcpu-16-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+aws,India,ap-south-1,Mumbai,m6gd.xlarge,4,16,arm64,AWS Graviton,89.10,2026-11-04,https://vmprices.com/sizes/4-vcpu-16-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
 azure,India,centralindia,Pune,D4ps v6,4,16,arm64,Microsoft Cobalt,68.77,2026-11-04,https://vmprices.com/sizes/4-vcpu-16-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+azure,India,centralindia,Pune,D4ps v5,4,16,arm64,Ampere,75.05,2026-11-04,https://vmprices.com/sizes/4-vcpu-16-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+azure,India,centralindia,Pune,D4as v5,4,16,x86_64,AMD,82.35,2026-11-04,https://vmprices.com/sizes/4-vcpu-16-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+azure,India,centralindia,Pune,DC4as v5,4,16,x86_64,AMD,82.35,2026-11-04,https://vmprices.com/sizes/4-vcpu-16-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+azure,India,centralindia,Pune,DC4as cc v5,4,16,x86_64,AMD,82.35,2026-11-04,https://vmprices.com/sizes/4-vcpu-16-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
 gcp,India,asia-south1,Mumbai,n2d-standard-4,4,16,x86_64,AMD,82.62,2026-11-04,https://vmprices.com/sizes/4-vcpu-16-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+gcp,India,asia-south1,Mumbai,t2d-standard-4,4,16,x86_64,AMD,82.62,2026-11-04,https://vmprices.com/sizes/4-vcpu-16-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+gcp,India,asia-south1,Mumbai,c2d-standard-4,4,16,x86_64,AMD,88.69,2026-11-04,https://vmprices.com/sizes/4-vcpu-16-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+gcp,India,asia-south1,Mumbai,n4d-standard-4,4,16,x86_64,AMD,95.80,2026-11-04,https://vmprices.com/sizes/4-vcpu-16-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
 aws,India,ap-south-1,Mumbai,m6g.2xlarge,8,32,arm64,AWS Graviton,149.00,2026-11-05,https://vmprices.com/sizes/8-vcpu-32-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+aws,India,ap-south-1,Mumbai,m5a.2xlarge,8,32,x86_64,AMD,163.00,2026-11-05,https://vmprices.com/sizes/8-vcpu-32-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+aws,India,ap-south-1,Mumbai,m6a.2xlarge,8,32,x86_64,AMD,163.00,2026-11-05,https://vmprices.com/sizes/8-vcpu-32-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+aws,India,ap-south-1,Mumbai,m7g.2xlarge,8,32,arm64,AWS Graviton,171.00,2026-11-05,https://vmprices.com/sizes/8-vcpu-32-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+aws,India,ap-south-1,Mumbai,m6gd.2xlarge,8,32,arm64,AWS Graviton,177.00,2026-11-05,https://vmprices.com/sizes/8-vcpu-32-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
 azure,India,centralindia,Pune,D8ps v6,8,32,arm64,Microsoft Cobalt,136.00,2026-11-05,https://vmprices.com/sizes/8-vcpu-32-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+azure,India,centralindia,Pune,D8ps v5,8,32,arm64,Ampere,149.00,2026-11-05,https://vmprices.com/sizes/8-vcpu-32-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+azure,India,centralindia,Pune,D8as v5,8,32,x86_64,AMD,163.00,2026-11-05,https://vmprices.com/sizes/8-vcpu-32-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+azure,India,centralindia,Pune,DC8as v5,8,32,x86_64,AMD,163.00,2026-11-05,https://vmprices.com/sizes/8-vcpu-32-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+azure,India,centralindia,Pune,DC8as cc v5,8,32,x86_64,AMD,163.00,2026-11-05,https://vmprices.com/sizes/8-vcpu-32-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
 gcp,India,asia-south1,Mumbai,n2d-standard-8,8,32,x86_64,AMD,164.00,2026-11-05,https://vmprices.com/sizes/8-vcpu-32-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+gcp,India,asia-south1,Mumbai,t2d-standard-8,8,32,x86_64,AMD,164.00,2026-11-05,https://vmprices.com/sizes/8-vcpu-32-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+gcp,India,asia-south1,Mumbai,c2d-standard-8,8,32,x86_64,AMD,176.00,2026-11-05,https://vmprices.com/sizes/8-vcpu-32-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
+gcp,India,asia-south1,Mumbai,n4d-standard-8,8,32,x86_64,AMD,190.00,2026-11-05,https://vmprices.com/sizes/8-vcpu-32-gb/,"Public Linux on-demand list-price estimate; 730 hours/month",10
