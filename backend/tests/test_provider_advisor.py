@@ -19,7 +19,8 @@ def valid_request(**changes):
 def test_catalog_has_three_providers_and_public_price_provenance():
     catalog = load_catalog()
     assert set(catalog.provider) == {"aws", "azure", "gcp"}
-    assert len(catalog) >= 9
+    assert len(catalog) == 42
+    assert catalog.provider.value_counts().to_dict() == {"aws": 15, "azure": 15, "gcp": 12}
     assert catalog.price_source_url.str.contains("vmprices.com").all()
     assert (catalog.linux_on_demand_monthly_usd > 0).all()
 
