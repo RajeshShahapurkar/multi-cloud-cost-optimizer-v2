@@ -1,0 +1,19 @@
+"use client";
+import { useState } from "react";
+import { Download, FileDown, LoaderCircle } from "lucide-react";
+import WorkspaceHeader from "@/components/workspace-header";
+import { API, useWorkspaceData } from "@/lib/use-workspace-data";
+export default function ReportsPage(){
+ const {session,data,loading,error,setError,refresh}=useWorkspaceData();const [busy,setBusy]=useState(false);
+ async function download(){
+  if(!session?.access_token)return;setBusy(true);setError("");
+  try{const response=await fetch(API+"/api/reports/summary.pdf",{headers:{Authorization:"Bearer "+session.access_token}});if(!response.ok){const payload=await response.json();throw new Error(payload.detail??"Could not generate report.");}const blob=await response.blob();const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="multi-cloud-cost-optimizer-report.pdf";a.click();URL.revokeObjectURL(url);}
+  catch(err){setError(err instanceof Error?err.message:"PDF download failed.");}finally{setBusy(false);}
+ }
+ if(loading)return <div className="p-8 text-slate-400">Loading report history…</div>;
+ return <div><WorkspaceHeader title="Reports & Import History" description="Review uploaded datasets and export a consolidated PDF summary." email={data?.user.email} onRefresh={refresh}/><main className="mx-auto max-w-7xl space-y-6 px-5 py-7">
+ <div><p className="text-xs font-semibold tracking-[.18em] text-cyan-300">REPORTING CENTRE</p><h2 className="mt-2 text-2xl font-bold">Your analysis records</h2><p className="mt-2 text-sm text-slate-400">Keep track of imports and generate a report from your current workspace data.</p></div>{error&&<p className="rounded-xl bg-rose-400/10 p-3 text-sm text-rose-200">{error}</p>}
+ <section className="flex flex-col justify-between gap-4 rounded-2xl border border-cyan-300/20 bg-cyan-300/5 p-5 sm:flex-row sm:items-center"><div className="flex items-center gap-3"><div className="rounded-xl bg-cyan-300/10 p-3 text-cyan-200"><FileDown/></div><div><h3 className="font-semibold">Workspace summary report</h3><p className="mt-1 text-xs text-slate-400">Generate a PDF from data currently stored in your account.</p></div></div><button onClick={download} disabled={busy} className="flex items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 disabled:opacity-50">{busy?<LoaderCircle className="h-4 w-4 animate-spin"/>:<Download className="h-4 w-4"/>}Download PDF report</button></section>
+ <section className="grid gap-4 sm:grid-cols-3">{[["Billing records",data?.billing_records??0],["Metric records",data?.metric_records??0],["Import batches",data?.imports.length??0]].map(([l,v])=><div key={String(l)} className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5"><p className="text-sm text-slate-400">{l}</p><p className="mt-2 text-3xl font-bold">{v}</p></div>)}</section>
+ <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5"><h3 className="font-semibold">Import history</h3>{!data?.imports.length?<p className="py-10 text-center text-sm text-slate-500">No files have been imported yet.</p>:<div className="mt-4 overflow-x-auto"><table className="w-full min-w-[700px] text-left text-sm"><thead className="text-[11px] uppercase tracking-wide text-slate-500"><tr><th className="py-3 pr-4">Filename</th><th className="pr-4">Data type</th><th className="pr-4">Accepted</th><th className="pr-4">Rejected</th><th className="pr-4">Status</th><th>Date</th></tr></thead><tbody>{data.imports.map(x=><tr key={x.id} className="border-t border-slate-800"><td className="py-3 pr-4">{x.original_filename}</td><td className="pr-4 capitalize">{x.data_type}</td><td className="pr-4">{x.valid_rows}/{x.total_rows}</td><td className="pr-4">{x.invalid_rows}</td><td className="pr-4 text-emerald-300">{x.status}</td><td className="text-slate-400">{new Date(x.created_at).toLocaleString()}</td></tr>)}</tbody></table></div>}</section></main></div>;
+}
