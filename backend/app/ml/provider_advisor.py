@@ -112,7 +112,7 @@ def _synthetic_target(row: dict[str, Any]) -> float:
 
 
 def generate_synthetic_training_data(
-    catalog: pd.DataFrame | None = None, scenarios: int = 1200, seed: int = 42
+    catalog: pd.DataFrame | None = None, scenarios: int = 1000, seed: int = 42
 ) -> pd.DataFrame:
     """Pair simulated workload needs with the real dated provider catalogue."""
     from numpy.random import default_rng
@@ -166,7 +166,7 @@ def generate_synthetic_training_data(
 
 
 def train_model(
-    catalog: pd.DataFrame | None = None, scenarios: int = 1200, seed: int = 42
+    catalog: pd.DataFrame | None = None, scenarios: int = 1000, seed: int = 42
 ) -> dict[str, Any]:
     """Train Random Forest and save the synthetic data, metrics and model artifact."""
     catalog = catalog if catalog is not None else load_catalog()
