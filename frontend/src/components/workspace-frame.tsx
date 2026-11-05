@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Activity, BarChart3, Cloud, FileClock, GitCompareArrows, LayoutDashboard,
+  Activity, BarChart3, BrainCircuit, Cloud, FileClock, GitCompareArrows, LayoutDashboard,
   Settings2, ShieldCheck, UploadCloud, WandSparkles,
 } from "lucide-react";
 
@@ -12,6 +12,7 @@ const items = [
   { href: "/dashboard/data", label: "Cloud Data", icon: UploadCloud },
   { href: "/dashboard/analytics", label: "Cost Analytics", icon: BarChart3 },
   { href: "/dashboard/optimization", label: "Optimization", icon: WandSparkles },
+  { href: "/dashboard/provider-advisor", label: "Provider Advisor", icon: BrainCircuit },
   { href: "/dashboard/comparison", label: "Cloud Comparison", icon: GitCompareArrows },
   { href: "/dashboard/reports", label: "Reports & History", icon: FileClock },
   { href: "/dashboard/settings", label: "Settings", icon: Settings2 },
