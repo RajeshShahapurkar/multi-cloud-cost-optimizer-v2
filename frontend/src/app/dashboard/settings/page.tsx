@@ -1,0 +1,18 @@
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { LogOut, ShieldCheck, UserRound } from "lucide-react";
+import WorkspaceHeader from "@/components/workspace-header";
+import { createClient } from "@/lib/supabase/client";
+import { useWorkspaceData } from "@/lib/use-workspace-data";
+export default function SettingsPage(){
+ const router=useRouter();const {data,loading,refresh}=useWorkspaceData();const [busy,setBusy]=useState(false);
+ async function signOut(){setBusy(true);await createClient().auth.signOut();router.replace("/login");router.refresh();}
+ if(loading)return <div className="p-8 text-slate-400">Loading account settings…</div>;
+ return <div><WorkspaceHeader title="Account Settings" description="Review your account and workspace privacy information." email={data?.user.email} onRefresh={refresh} onSignOut={signOut}/><main className="mx-auto max-w-5xl space-y-6 px-5 py-7">
+ <div><p className="text-xs font-semibold tracking-[.18em] text-cyan-300">WORKSPACE CONFIGURATION</p><h2 className="mt-2 text-2xl font-bold">Account and privacy</h2><p className="mt-2 text-sm text-slate-400">Your data workspace is associated with your authenticated account.</p></div>
+ <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5"><div className="flex items-center gap-3"><div className="rounded-xl bg-cyan-300/10 p-3 text-cyan-200"><UserRound/></div><div><h3 className="font-semibold">Signed-in account</h3><p className="text-xs text-slate-500">Supabase authenticated user</p></div></div><div className="mt-5 rounded-xl bg-slate-950 p-4"><p className="text-xs text-slate-500">Email address</p><p className="mt-1 text-sm text-slate-100">{data?.user.email??"Email not available"}</p><p className="mt-4 text-xs text-slate-500">User ID</p><p className="mt-1 break-all font-mono text-xs text-slate-400">{data?.user.id}</p></div></section>
+ <section className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-5"><div className="flex items-center gap-3"><ShieldCheck className="h-6 w-6 text-emerald-300"/><h3 className="font-semibold">Workspace privacy</h3></div><p className="mt-3 text-sm leading-6 text-slate-300">The application uses Supabase authentication and row-level security policies to isolate user data. API requests use your authenticated session token. Keep your credentials private and never share environment files or secret keys.</p></section>
+ <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5"><h3 className="font-semibold">Current application mode</h3><p className="mt-2 text-sm leading-6 text-slate-400">This project currently analyzes uploaded billing exports, utilization metrics and user-provided pricing catalogues. It does not connect to live cloud accounts or automatically change cloud resources.</p><div className="mt-3 flex flex-wrap gap-2"><span className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300">AWS</span><span className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300">Azure</span><span className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300">Google Cloud</span></div></section>
+ <section className="rounded-2xl border border-rose-400/20 bg-rose-400/5 p-5"><h3 className="font-semibold">Session management</h3><p className="mt-2 text-sm text-slate-400">Sign out of this browser session. You can sign in again at any time.</p><button disabled={busy} onClick={signOut} className="mt-4 flex items-center gap-2 rounded-xl border border-rose-400/30 px-4 py-2.5 text-sm text-rose-200 hover:bg-rose-400/10 disabled:opacity-50"><LogOut className="h-4 w-4"/>Sign out</button></section></main></div>;
+}
