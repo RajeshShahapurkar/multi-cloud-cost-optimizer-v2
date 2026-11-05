@@ -5,18 +5,18 @@ ROOT=Path(__file__).resolve().parents[2]
 SAMPLES=ROOT/"sample-data"
 
 def test_provider_pricing_samples_parse():
-    for provider,filename,region in [
-        ("aws","aws_pricing_synthetic.csv","us-east-1"),
-        ("azure","azure_pricing_synthetic.csv","eastus"),
-        ("gcp","gcp_pricing_synthetic.csv","us-central1"),
+    for provider,filename,region,expected_count in [
+        ("aws","aws_pricing_synthetic.csv","us-east-1",2),
+        ("azure","azure_pricing_synthetic.csv","eastus",1),
+        ("gcp","gcp_pricing_synthetic.csv","us-central1",1),
     ]:
         rows,errors=parse_pricing((SAMPLES/filename).read_bytes(),provider)
-        assert len(rows)==1
+        assert len(rows)==expected_count
         assert not errors
-        assert rows[0]["provider"]==provider
-        assert rows[0]["region"]==region
-        assert rows[0]["currency"]=="USD"
-        assert rows[0]["vcpu"]==2
+        assert all(row["provider"]==provider for row in rows)
+        assert all(row["region"]==region for row in rows)
+        assert all(row["currency"]=="USD" for row in rows)
+        assert all(row["vcpu"] in (2,4) for row in rows)
 
 def test_pricing_rejects_negative_rates():
     csv=b"region,instance_type,vcpu,memory_gb,compute_hourly_cost,storage_gb_month_cost,currency,pricing_date\nus-east-1,tiny,2,8,-0.1,0.1,USD,2026-10-01\n"
@@ -58,7 +58,6 @@ def test_right_sizing_savings_requires_both_catalogue_rates():
         EmptyDb(),"aws","us-east-1","USD",4,16.0,2,8.0
     ))
     assert result is None
-
 
 def test_pricing_rejects_non_finite_numeric_values():
     csv=b"region,instance_type,vcpu,memory_gb,compute_hourly_cost,storage_gb_month_cost,currency,pricing_date\nus-east-1,tiny,2,8,NaN,0.1,USD,2026-10-01\n"

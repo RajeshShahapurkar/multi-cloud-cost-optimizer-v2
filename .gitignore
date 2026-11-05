@@ -14,3 +14,6 @@ coverage/
 .DS_Store
 Thumbs.db
 uploads/
+backend/app/ml/artifacts/
+data/provider_advisor/synthetic_training_data.csv
+data/provider_advisor/model_metrics.json
