@@ -6,6 +6,7 @@ from app.routers.persistence import router as persistence_router
 from app.routers.recommendations import router as recommendations_router
 from app.routers.reports import router as reports_router
 from app.routers.comparison import router as comparison_router
+from app.routers.provider_advisor import router as provider_advisor_router
 from app.settings import settings
 
 app = FastAPI(title="Multi-Cloud Cost Optimizer API", version="0.1.0")
@@ -22,6 +23,8 @@ app.include_router(persistence_router, prefix="/api")
 app.include_router(recommendations_router, prefix="/api")
 app.include_router(reports_router, prefix="/api")
 app.include_router(comparison_router, prefix="/api")
+app.include_router(provider_advisor_router, prefix="/api")
+
 
 @app.get("/health", tags=["system"])
 def health():
