@@ -1,0 +1,5 @@
+"use client";
+import { LogOut, RefreshCw } from "lucide-react";
+export default function WorkspaceHeader({title,description,email,onRefresh,onSignOut}:{title:string;description:string;email?:string;onRefresh?:()=>void;onSignOut?:()=>void}) {
+ return <header className="sticky top-0 z-20 border-b border-slate-800 bg-[#080d18]/95 backdrop-blur"><div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4"><div className="min-w-0"><h1 className="truncate text-lg font-semibold text-white">{title}</h1><p className="mt-0.5 hidden text-xs text-slate-400 sm:block">{description}</p></div><div className="flex shrink-0 items-center gap-2">{email&&<span className="hidden max-w-48 truncate text-xs text-slate-500 xl:inline">{email}</span>}{onRefresh&&<button onClick={onRefresh} title="Refresh data" className="rounded-lg border border-slate-700 p-2 text-slate-300 hover:bg-slate-800"><RefreshCw className="h-4 w-4"/></button>}{onSignOut&&<button onClick={onSignOut} className="flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300 hover:bg-slate-800"><LogOut className="h-4 w-4"/>Sign out</button>}</div></div></header>;
+}
