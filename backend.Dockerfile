@@ -2,7 +2,10 @@ FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app
+    PYTHONPATH=/app \
+    APP_ENV=production \
+    MAX_UPLOAD_MB=10 \
+    CORS_ORIGINS="http://localhost:3000,https://multi-cloud-cost-optimizer-v2-frontend.onrender.com"
 
 WORKDIR /app
 
