@@ -6,7 +6,7 @@ import { Activity, AlertTriangle, ArrowUpFromLine, BarChart3, Check, Cloud, File
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { createClient } from "@/lib/supabase/client";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL ?? "https://multi-cloud-cost-optimizer-v2-api.onrender.com";
 type Provider = "aws" | "azure" | "gcp";
 type Recommendation = { id:string; provider:string; resource_id:string|null; category:string; severity:string; title:string; explanation:string; evidence:Record<string,unknown>; status:string; estimated_monthly_savings:number|null; currency:string|null; created_at:string };
 type ImportRow = { id:string; data_type:string; original_filename:string; status:string; total_rows:number; valid_rows:number; invalid_rows:number; duplicate_rows:number; created_at:string };
